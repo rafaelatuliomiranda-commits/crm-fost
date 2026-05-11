@@ -465,6 +465,7 @@ tbody tr:hover td{background:rgba(123,47,255,0.07);}
             <th>Empresa</th>
             <th>Setor</th>
             <th>Telefone</th>
+            <th>Site</th>
             <th>Contatos</th>
             <th>Negócios</th>
             <th></th>
@@ -553,6 +554,33 @@ tbody tr:hover td{background:rgba(123,47,255,0.07);}
             </button>
           </div>
         </div>
+
+        <div class="dash-card-title">
+          Importação de dados
+        </div>
+
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px;">
+          <button type="button" class="btn-add" onclick="abrirImport('contatos')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Importar contatos
+          </button>
+          <button type="button" class="btn-add" onclick="abrirImport('empresas')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Importar empresas
+          </button>
+          <button type="button" class="btn-add" onclick="abrirImport('negocios')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Importar negócios
+          </button>
+        </div>
+        <div style="font-size:11px;color:var(--muted-dim);margin-bottom:28px;">
+          Clique num botão para ver o formato esperado e selecionar o arquivo CSV.
+        </div>
+
+        <!-- inputs de arquivo ocultos -->
+        <input type="file" id="file-import-contatos" accept=".csv" style="display:none" onchange="processarImport(event,'contatos')">
+        <input type="file" id="file-import-empresas" accept=".csv" style="display:none" onchange="processarImport(event,'empresas')">
+        <input type="file" id="file-import-negocios" accept=".csv" style="display:none" onchange="processarImport(event,'negocios')">
 
         <div class="dash-card-title">
           Exportação de dados
@@ -724,7 +752,7 @@ tbody tr:hover td{background:rgba(123,47,255,0.07);}
 </div>
 
 <!-- MODAL FECHAMENTO (drag para ganho/perdido) -->
-<div class="modal-overlay" id="modal-fechamento" onclick="fecharModalFora(event,'fechamento')">
+<div class="modal-overlay" id="modal-fechamento" onclick="if(event.target===this){fecharModal('fechamento');renderPipeline();}">
   <div class="mini-modal">
     <h3 id="fechamento-titulo">Confirmar fechamento</h3>
     <input type="hidden" id="f-id">
@@ -741,7 +769,7 @@ tbody tr:hover td{background:rgba(123,47,255,0.07);}
     <div class="field"><label>Valor fechado (R$)</label><input id="f-valor" type="number" placeholder="Valor real negociado" min="0"></div>
     <div class="field"><label>Data de fechamento</label><input id="f-data" type="date"></div>
     <div class="modal-actions">
-      <button class="btn-cancel" onclick="fecharModal('fechamento')">Cancelar</button>
+      <button class="btn-cancel" onclick="fecharModal('fechamento');renderPipeline();">Cancelar</button>
       <button class="btn-save" onclick="confirmarFechamento()">Confirmar</button>
     </div>
   </div>
@@ -792,7 +820,8 @@ let dashPeriod=6;
 
 let owners = ['João Silva','Maria Torres'];
 
-let empresas = [...new Set(contatos.map(c => c.empresa).filter(Boolean))].sort();
+let empresas = [...new Set(contatos.map(c => c.empresa).filter(Boolean))].sort()
+  .map(nome => ({nome, telefone:'', setor:'', site:''}));
 
 /* STORAGE */
 function salvarDados(){
@@ -816,7 +845,11 @@ function carregarDados(){
 
   if(contatosSalvos) contatos = JSON.parse(contatosSalvos);
   if(negociosSalvos) negocios = JSON.parse(negociosSalvos);
-  if(empresasSalvas) empresas = JSON.parse(empresasSalvas);
+  if(empresasSalvas){
+    const raw = JSON.parse(empresasSalvas);
+    // migração: se ainda for array de strings, converte para objetos
+    empresas = raw.map(e => typeof e === 'string' ? {nome:e, telefone:'', setor:'', site:''} : e);
+  }
 
   const ownersSalvos = localStorage.getItem(storageKey('owners'));
   if(ownersSalvos) owners = JSON.parse(ownersSalvos);
@@ -888,7 +921,7 @@ function atualizarSelectEmpresas(){
 
   const options =
     '<option value="">Selecionar empresa…</option>' +
-    empresas.map(e => `<option value="${e}">${e}</option>`).join('');
+    empresas.map(e => `<option value="${e.nome}">${e.nome}</option>`).join('');
 
   if(contato){
     const atual = contato.value;
@@ -910,9 +943,9 @@ function adicionarEmpresa(nome){
 
   if(!empresa) return '';
 
-  if(!empresas.includes(empresa)){
-    empresas.push(empresa);
-    empresas.sort();
+  if(!empresas.some(e => e.nome === empresa)){
+    empresas.push({nome: empresa, telefone:'', setor:'', site:''});
+    empresas.sort((a,b) => a.nome.localeCompare(b.nome));
   }
 
   atualizarSelectEmpresas();
@@ -1084,7 +1117,7 @@ function atualizarSelectOwners(){
 
 
 
-function normalizarEtapas(){
+function normalizarEtapas(salvar = false){
 
   const finais = ETAPAS.filter(e => e.fixa);
   const editaveis = ETAPAS.filter(e => !e.fixa);
@@ -1098,7 +1131,7 @@ function normalizarEtapas(){
     perdido
   ];
 
-  salvarDados();
+  if(salvar) salvarDados();
 }
 
 function atualizarSelectEtapas(){
@@ -1370,16 +1403,17 @@ function exportarCSV(tipo){
 
   if(tipo === 'empresas'){
 
-    dados = empresas.map(nomeEmpresa => {
-
-      const contatosEmpresa = contatos.filter(c => c.empresa === nomeEmpresa);
-
-      const negociosEmpresa = negocios.filter(n => n.empresa === nomeEmpresa);
+    dados = empresas.map(emp => {
+      const contatosEmpresa = contatos.filter(c => c.empresa === emp.nome);
+      const negociosEmpresa = negocios.filter(n => n.empresa === emp.nome);
 
       return {
-        empresa:nomeEmpresa,
-        contatos:contatosEmpresa.length,
-        negocios:negociosEmpresa.length
+        empresa: emp.nome,
+        setor: emp.setor || '',
+        telefone: emp.telefone || '',
+        site: emp.site || '',
+        contatos: contatosEmpresa.length,
+        negocios: negociosEmpresa.length
       };
     });
 
@@ -1487,35 +1521,34 @@ function renderEmpresas(){
   if(!tbody) return;
 
   const empresasDetalhadas = empresas.map(emp=>{
-
-    const contatosEmpresa = contatos.filter(c=>c.empresa===emp);
-    const negociosEmpresa = negocios.filter(n=>n.empresa===emp);
-
-    const primeiroContato = contatosEmpresa[0] || {};
+    const nomeEmp = emp.nome;
+    const contatosEmpresa = contatos.filter(c=>c.empresa===nomeEmp);
+    const negociosEmpresa = negocios.filter(n=>n.empresa===nomeEmp);
 
     return {
-      nome: emp,
+      nome: nomeEmp,
       contatos: contatosEmpresa.length,
       negocios: negociosEmpresa.length,
-      setor: primeiroContato.setor || '—',
-      telefone: primeiroContato.telefone || '—'
+      setor: emp.setor || '—',
+      telefone: emp.telefone || '—',
+      site: emp.site || '',
     };
-
   });
 
   tbody.innerHTML = empresasDetalhadas.map(emp => `
-    <tr style="cursor:pointer" onclick="event.stopPropagation(); editarEmpresa('${emp.nome}')">
+    <tr style="cursor:pointer" onclick="event.stopPropagation(); editarEmpresa('${emp.nome.replace(/'/g,"\\'")}')">
       <td class="td-name">${emp.nome}</td>
       <td>${emp.setor}</td>
-      <td>${emp.telefone}</td>
+      <td style="font-size:12px;">${emp.telefone}</td>
+      <td style="font-size:12px;">${emp.site ? `<a href="${emp.site.startsWith('http')?emp.site:'https://'+emp.site}" target="_blank" onclick="event.stopPropagation()" style="color:var(--cyan);text-decoration:none;">${emp.site.replace(/^https?:\/\//,'')}</a>` : '—'}</td>
       <td>${emp.contatos}</td>
       <td>${emp.negocios}</td>
 
       <td>
         <button
           class="icon-btn danger"
-          onclick="event.stopPropagation(); excluirEmpresa('${emp.nome}')"
-          title="Excluir empresa"
+          onclick="event.stopPropagation(); excluirEmpresa('${emp.nome.replace(/'/g,"\\'")}')
+"          title="Excluir empresa"
         >
           ${SVG_DEL}
         </button>
@@ -1552,7 +1585,7 @@ function excluirEmpresa(nomeEmpresa){
 
   contatos = contatos.filter(c => c.empresa !== nomeEmpresa);
   negocios = negocios.filter(n => n.empresa !== nomeEmpresa);
-  empresas = empresas.filter(e => e !== nomeEmpresa);
+  empresas = empresas.filter(e => e.nome !== nomeEmpresa);
 
   sincronizarStatusRelacionados();
   salvarDados();
@@ -1674,39 +1707,67 @@ function onDrop(e,etapa){
     document.getElementById('fechamento-titulo').textContent=etapa==='ganho'?'🎉 Confirmar ganho':'Registrar perda';
     document.getElementById('modal-fechamento').classList.add('open');
   } else {
+    if(!neg.historico) neg.historico={};
     neg.historico[etapa]=hoje;
     neg.etapa=etapa;
     sincronizarStatusRelacionados();
-  salvarDados();renderPipeline();atualizarKPIs();
-
-  const badge = document.getElementById('workspace-badge');
-  if(badge){
-    badge.textContent = WORKSPACE_ID.replace('crm_','');
-  }
+    salvarDados();
+    renderPipeline();
+    atualizarKPIs();
+    if(document.getElementById('sec-dashboard').classList.contains('active')) renderDashboard();
+    const badge = document.getElementById('workspace-badge');
+    if(badge){ badge.textContent = WORKSPACE_ID.replace('crm_',''); }
   }
 }
 
 function confirmarFechamento(){
-  const id=parseInt(document.getElementById('f-id').value);
-  const etapa=document.getElementById('f-etapa').value;
-  const neg=negocios.find(n=>n.id===id);
-  if(!neg)return;
-  neg.etapa=etapa;
-  neg.valorFechado=parseFloat(document.getElementById('f-valor').value)||neg.valor;
-  neg.dataFechamento=document.getElementById('f-data').value||hoje;
-  neg.motivo=document.getElementById('f-motivo').value||'';
-  if(!neg.historico[etapa])neg.historico[etapa]=neg.dataFechamento;
-  fecharModal('fechamento');
-  sincronizarStatusRelacionados();
-  salvarDados();renderPipeline();atualizarKPIs();
 
-  const badge = document.getElementById('workspace-badge');
-  if(badge){
-    badge.textContent = WORKSPACE_ID.replace('crm_','');
+  const id = parseInt(document.getElementById('f-id').value);
+  const etapa = document.getElementById('f-etapa').value;
+
+  const neg = negocios.find(n => n.id === id);
+
+  if(!neg) return;
+
+  neg.etapa = etapa;
+
+  neg.valorFechado =
+    parseFloat(document.getElementById('f-valor').value)
+    || neg.valor;
+
+  neg.dataFechamento =
+    document.getElementById('f-data').value
+    || hoje;
+
+  neg.motivo =
+    document.getElementById('f-motivo').value
+    || '';
+
+  if(!neg.historico){
+    neg.historico = {};
   }
-  if(document.getElementById('sec-dashboard').classList.contains('active'))renderDashboard();
-renderOwners();
-atualizarSelectOwners();
+
+  if(!neg.historico[etapa]){
+    neg.historico[etapa] = neg.dataFechamento;
+  }
+
+  // SALVA IMEDIATAMENTE
+  salvarDados();
+
+  // depois sincroniza e renderiza
+  sincronizarStatusRelacionados();
+
+  fecharModal('fechamento');
+
+  renderPipeline();
+
+  atualizarKPIs();
+
+  if(document.getElementById('sec-dashboard').classList.contains('active')){
+    renderDashboard();
+  }
+
+  console.log('FECHAMENTO SALVO:', neg);
 }
 
 /* ═══════════════ DASHBOARD ═══════════════ */
@@ -1714,10 +1775,7 @@ function setPeriod(p,btn){
   dashPeriod=p;
   document.querySelectorAll('.period-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
-  sincronizarStatusRelacionados();
-  salvarDados();renderDashboard();
-renderOwners();
-atualizarSelectOwners();
+  renderDashboard();
 }
 
 function getMeses(n){
@@ -1879,11 +1937,13 @@ function switchTab(nome){
   document.querySelectorAll('.tab-section').forEach(s=>s.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(b=>b.classList.remove('active'));
   document.getElementById('sec-'+nome).classList.add('active');
-  document.getElementById('tab-btn-'+nome).classList.add('active');
-  if(nome==='dashboard')sincronizarStatusRelacionados();
-  salvarDados();renderDashboard();
-renderOwners();
-atualizarSelectOwners();
+  const btnTab = document.getElementById('tab-btn-'+nome);
+  if(btnTab) btnTab.classList.add('active');
+  if(nome==='dashboard'){ sincronizarStatusRelacionados(); renderDashboard(); }
+  if(nome==='pipeline'){ renderPipeline(); }
+  if(nome==='contatos'){ renderContatos(); }
+  if(nome==='empresas'){ renderEmpresas(); }
+  if(nome==='configuracoes'){ renderPipelineConfig(); renderOwners(); atualizarSelectOwners(); }
 }
 
 /* ═══════════════ MODAIS ═══════════════ */
@@ -1903,9 +1963,11 @@ function abrirModal(tipo){
     document.getElementById('modal-negocio-titulo').textContent='Novo negócio';
     document.getElementById('n-id').value='';
     ['n-titulo','n-empresa','n-owner','n-valor','n-valor-fechado'].forEach(id=>document.getElementById(id).value='');
+    atualizarSelectEtapas();
     document.getElementById('n-etapa').value='lead';
     renderContatosAssociados(document.getElementById('n-empresa').value);
     atualizarSelectEmpresas();
+    atualizarSelectOwners();
     document.getElementById('n-data-entrada').value=hoje;
     document.getElementById('n-data-fechamento').value='';
     renderNotasModal();renderAtivModal();
@@ -1986,6 +2048,8 @@ function editarNegocio(id){
   document.getElementById('n-id').value=n.id;
   document.getElementById('n-titulo').value=n.titulo;
   atualizarSelectEmpresas();
+  atualizarSelectEtapas();
+  atualizarSelectOwners();
   document.getElementById('n-empresa').value=n.empresa||'';
   document.getElementById('n-owner').value=n.owner||'';
   renderContatosAssociados(n.empresa || '');
@@ -2073,8 +2137,8 @@ function salvarNegocio(){
     atividades:negEditando?.atividades||[],
     historico:negEditando?.historico||{lead:hoje,qualificacao:null,negociacao:null,ganho:null,perdido:null},
   };
-  // atualizar entrada na etapa atual
-  d.historico[etapa]=hoje;
+  // atualizar entrada na etapa atual só se ainda não tiver data registrada
+  if(!d.historico[etapa]) d.historico[etapa]=hoje;
   if(idEx){const i=negocios.findIndex(n=>n.id===idEx);if(i!==-1)Object.assign(negocios[i],d);}
   else negocios.push({id:proxN++,...d});
   fecharModal('negocio');atualizarFiltroOwner();sincronizarStatusRelacionados();
@@ -2107,12 +2171,322 @@ function excluirNegocio(id){if(!confirm('Remover este negócio?'))return;negocio
 renderOwners();
 atualizarSelectOwners();}
 
-/* ═══════════════ INIT ═══════════════ */
+
+/* ═══════════════ IMPORTAÇÃO CSV ═══════════════ */
+
+let importTipo = null;
+let importDadosParsed = null;
+
+const IMPORT_FORMATOS = {
+  contatos: {
+    titulo: 'Importar contatos',
+    obrigatorios: ['nome'],
+    opcionais: ['empresa','cargo','status','telefone','email','info'],
+    descricao: `<div style="background:rgba(123,47,255,0.07);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:16px;font-size:12px;color:var(--muted);line-height:1.7;">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--cyan);margin-bottom:10px;">Formato esperado — contatos.csv</div>
+      <div style="margin-bottom:8px;">O arquivo deve ter <strong style="color:var(--white);">cabeçalho na primeira linha</strong> com as colunas abaixo.</div>
+      <div style="display:grid;grid-template-columns:auto 1fr;gap:4px 16px;margin-bottom:10px;">
+        <span style="color:var(--white);font-weight:600;">nome</span><span>Obrigatório. Nome completo do contato.</span>
+        <span style="color:var(--muted-dim);">empresa</span><span>Nome da empresa. Será criada se não existir.</span>
+        <span style="color:var(--muted-dim);">cargo</span><span>Cargo ou função.</span>
+        <span style="color:var(--muted-dim);">status</span><span>lead · prospect · cliente · perdido (padrão: lead)</span>
+        <span style="color:var(--muted-dim);">telefone</span><span>Telefone principal.</span>
+        <span style="color:var(--muted-dim);">email</span><span>E-mail.</span>
+        <span style="color:var(--muted-dim);">info</span><span>Observações livres sobre o contato.</span>
+      </div>
+      <div style="background:rgba(0,0,0,0.2);border-radius:5px;padding:10px;font-family:monospace;font-size:11px;color:var(--muted);">nome,empresa,cargo,status,telefone,email<br>"João Silva","Acme Ltda","CEO","prospect","(41) 99000-0000","joao@acme.com"</div>
+      <div style="margin-top:10px;font-size:11px;color:var(--muted-dim);">✦ Contatos com mesmo nome + empresa não serão duplicados.<br>✦ Você pode exportar o modelo atual e editá-lo no Excel.</div>
+    </div>`,
+  },
+  empresas: {
+    titulo: 'Importar empresas',
+    obrigatorios: ['empresa'],
+    opcionais: ['setor','telefone','site'],
+    descricao: `<div style="background:rgba(123,47,255,0.07);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:16px;font-size:12px;color:var(--muted);line-height:1.7;">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--cyan);margin-bottom:10px;">Formato esperado — empresas.csv</div>
+      <div style="margin-bottom:8px;">O arquivo deve ter <strong style="color:var(--white);">cabeçalho na primeira linha</strong> com as colunas abaixo.</div>
+      <div style="display:grid;grid-template-columns:auto 1fr;gap:4px 16px;margin-bottom:10px;">
+        <span style="color:var(--white);font-weight:600;">empresa</span><span>Obrigatório. Nome da empresa.</span>
+        <span style="color:var(--muted-dim);">setor</span><span>Setor de atuação (ex: Varejo, Tecnologia).</span>
+        <span style="color:var(--muted-dim);">telefone</span><span>Telefone principal da empresa.</span>
+        <span style="color:var(--muted-dim);">site</span><span>Site da empresa (ex: www.empresa.com.br).</span>
+      </div>
+      <div style="background:rgba(0,0,0,0.2);border-radius:5px;padding:10px;font-family:monospace;font-size:11px;color:var(--muted);">empresa,setor,telefone,site<br>"Acme Ltda","Tecnologia","(41) 99000-0000","www.acme.com.br"</div>
+      <div style="margin-top:10px;font-size:11px;color:var(--muted-dim);">✦ Empresas já existentes serão ignoradas.<br>✦ Você pode exportar o modelo atual e editá-lo no Excel.</div>
+    </div>`,
+  },
+  negocios: {
+    titulo: 'Importar negócios',
+    obrigatorios: ['titulo'],
+    opcionais: ['empresa','owner','valor','valorFechado','etapa','dataEntrada','dataFechamento','motivo'],
+    descricao: `<div style="background:rgba(123,47,255,0.07);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:16px;font-size:12px;color:var(--muted);line-height:1.7;">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--cyan);margin-bottom:10px;">Formato esperado — negocios.csv</div>
+      <div style="margin-bottom:8px;">O arquivo deve ter <strong style="color:var(--white);">cabeçalho na primeira linha</strong> com as colunas abaixo.</div>
+      <div style="display:grid;grid-template-columns:auto 1fr;gap:4px 16px;margin-bottom:10px;">
+        <span style="color:var(--white);font-weight:600;">titulo</span><span>Obrigatório. Nome do negócio.</span>
+        <span style="color:var(--muted-dim);">empresa</span><span>Nome da empresa. Será criada se não existir.</span>
+        <span style="color:var(--muted-dim);">owner</span><span>Proprietário/vendedor responsável.</span>
+        <span style="color:var(--muted-dim);">valor</span><span>Valor previsto em R$ (apenas número, ex: 15000).</span>
+        <span style="color:var(--muted-dim);">valorFechado</span><span>Valor fechado em R$ (apenas número).</span>
+        <span style="color:var(--muted-dim);">etapa</span><span>lead · qualificacao · negociacao · ganho · perdido (padrão: lead)</span>
+        <span style="color:var(--muted-dim);">dataEntrada</span><span>Data de entrada no formato AAAA-MM-DD (ex: 2025-01-15).</span>
+        <span style="color:var(--muted-dim);">dataFechamento</span><span>Data de fechamento no formato AAAA-MM-DD.</span>
+        <span style="color:var(--muted-dim);">motivo</span><span>Motivo da perda (se etapa = perdido).</span>
+      </div>
+      <div style="background:rgba(0,0,0,0.2);border-radius:5px;padding:10px;font-family:monospace;font-size:11px;color:var(--muted);">titulo,empresa,owner,valor,etapa,dataEntrada<br>"Implantação CRM","Acme Ltda","João Silva","12000","negociacao","2025-03-01"</div>
+      <div style="margin-top:10px;font-size:11px;color:var(--muted-dim);">✦ Negócios com mesmo título + empresa não serão duplicados.<br>✦ Você pode exportar o modelo atual e editá-lo no Excel.</div>
+    </div>`,
+  },
+};
+
+function abrirImport(tipo){
+  importTipo = tipo;
+  importDadosParsed = null;
+  const fmt = IMPORT_FORMATOS[tipo];
+  document.getElementById('import-titulo').textContent = fmt.titulo;
+  document.getElementById('import-instrucoes').innerHTML = fmt.descricao;
+  document.getElementById('import-preview').style.display = 'none';
+  document.getElementById('import-btn-confirmar').style.display = 'none';
+  document.getElementById('import-dropzone').style.borderColor = 'var(--border-mid)';
+  document.getElementById('import-dropzone').style.background = 'none';
+  // reset file input
+  const inp = document.getElementById('file-import-'+tipo);
+  inp.value = '';
+  document.getElementById('modal-import').classList.add('open');
+}
+
+function fecharModalImport(){
+  document.getElementById('modal-import').classList.remove('open');
+  importTipo = null;
+  importDadosParsed = null;
+}
+
+function triggerFileInput(){
+  if(importTipo) document.getElementById('file-import-'+importTipo).click();
+}
+
+function onDropImport(e){
+  e.preventDefault();
+  const dz = document.getElementById('import-dropzone');
+  dz.style.borderColor = 'var(--border-mid)';
+  dz.style.background = 'none';
+  const file = e.dataTransfer.files[0];
+  if(file) lerArquivoImport(file);
+}
+
+function processarImport(event, tipo){
+  const file = event.target.files[0];
+  if(file) lerArquivoImport(file);
+}
+
+function lerArquivoImport(file){
+  if(!file.name.toLowerCase().endsWith('.csv')){
+    alert('Por favor, selecione um arquivo .csv');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try {
+      const texto = e.target.result;
+      const resultado = parsearCSV(texto);
+      mostrarPreviewImport(resultado);
+    } catch(err) {
+      alert('Erro ao ler o arquivo: ' + err.message);
+    }
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function parsearCSV(texto){
+  // Parser CSV robusto: suporta campos entre aspas com vírgulas e quebras de linha internas
+  const linhas = [];
+  let campo = '';
+  let dentroAspas = false;
+  let linha = [];
+
+  for(let i = 0; i < texto.length; i++){
+    const c = texto[i];
+    const prox = texto[i+1];
+
+    if(dentroAspas){
+      if(c === '"' && prox === '"'){ campo += '"'; i++; }
+      else if(c === '"'){ dentroAspas = false; }
+      else { campo += c; }
+    } else {
+      if(c === '"'){ dentroAspas = true; }
+      else if(c === ','){  linha.push(campo.trim()); campo = ''; }
+      else if(c === '\r' && prox === '\n'){ linha.push(campo.trim()); campo=''; linhas.push(linha); linha=[]; i++; }
+      else if(c === '\n' || c === '\r'){ linha.push(campo.trim()); campo=''; linhas.push(linha); linha=[]; }
+      else { campo += c; }
+    }
+  }
+  if(campo || linha.length) { linha.push(campo.trim()); linhas.push(linha); }
+
+  // Remove linhas vazias
+  const linhasValidas = linhas.filter(l => l.some(c => c !== ''));
+  if(linhasValidas.length < 2) throw new Error('Arquivo vazio ou sem dados além do cabeçalho.');
+
+  const headers = linhasValidas[0].map(h => h.toLowerCase().trim());
+  const rows = linhasValidas.slice(1).map(l => {
+    const obj = {};
+    headers.forEach((h, i) => { obj[h] = (l[i] || '').trim(); });
+    return obj;
+  });
+
+  return { headers, rows };
+}
+
+function mostrarPreviewImport(resultado){
+  const { headers, rows } = resultado;
+  const fmt = IMPORT_FORMATOS[importTipo];
+  const obrig = fmt.obrigatorios;
+
+  // Verifica colunas obrigatórias
+  const erros = [];
+  obrig.forEach(col => {
+    if(!headers.includes(col)){
+      erros.push(`Coluna obrigatória ausente: <strong style="color:var(--danger)">${col}</strong>`);
+    }
+  });
+
+  const errosEl = document.getElementById('import-preview-erros');
+  if(erros.length){
+    errosEl.innerHTML = erros.map(e =>
+      `<div style="background:rgba(255,107,107,0.08);border:1px solid rgba(255,107,107,0.25);border-radius:6px;padding:8px 12px;font-size:12px;color:var(--danger);margin-bottom:6px;">⚠ ${e}</div>`
+    ).join('');
+    document.getElementById('import-btn-confirmar').style.display = 'none';
+  } else {
+    errosEl.innerHTML = '';
+    importDadosParsed = resultado;
+    document.getElementById('import-btn-confirmar').style.display = 'inline-flex';
+  }
+
+  // Info
+  document.getElementById('import-preview-info').innerHTML =
+    `<span style="color:var(--white);font-weight:600;">${rows.length}</span> linha${rows.length!==1?'s':''} encontrada${rows.length!==1?'s':''} · colunas: <span style="color:var(--cyan);">${headers.join(', ')}</span>`;
+
+  // Tabela preview (max 5 linhas)
+  const thead = document.getElementById('import-preview-head');
+  const tbody = document.getElementById('import-preview-body');
+  thead.innerHTML = `<tr>${headers.map(h=>`<th style="padding:7px 10px;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted-dim);text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;">${h}</th>`).join('')}</tr>`;
+  tbody.innerHTML = rows.slice(0,5).map(r =>
+    `<tr>${headers.map(h=>`<td style="padding:7px 10px;font-size:11px;color:var(--muted);border-bottom:1px solid rgba(123,47,255,0.06);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r[h]||'—'}</td>`).join('')}</tr>`
+  ).join('');
+  if(rows.length > 5){
+    tbody.innerHTML += `<tr><td colspan="${headers.length}" style="padding:8px 10px;font-size:11px;color:var(--muted-dim);text-align:center;">... e mais ${rows.length-5} linha${rows.length-5!==1?'s':''}</td></tr>`;
+  }
+
+  document.getElementById('import-preview').style.display = 'block';
+}
+
+function confirmarImport(){
+  if(!importDadosParsed || !importTipo) return;
+  const { rows } = importDadosParsed;
+  let adicionados = 0;
+  let ignorados = 0;
+
+  if(importTipo === 'empresas'){
+    rows.forEach(r => {
+      const nome = (r['empresa'] || '').trim();
+      if(!nome){ ignorados++; return; }
+      if(!empresas.some(e => e.nome === nome)){
+        empresas.push({
+          nome,
+          setor: (r['setor']||'').trim(),
+          telefone: (r['telefone']||'').trim(),
+          site: (r['site']||'').trim(),
+        });
+        adicionados++;
+      } else ignorados++;
+    });
+    empresas.sort((a,b) => a.nome.localeCompare(b.nome));
+  }
+
+  if(importTipo === 'contatos'){
+    const statusValidos = ['lead','prospect','cliente','perdido'];
+    rows.forEach(r => {
+      const nome = (r['nome'] || '').trim();
+      if(!nome){ ignorados++; return; }
+      // verifica duplicata por nome + empresa
+      const empresa = (r['empresa'] || '').trim();
+      const jaExiste = contatos.some(c =>
+        c.nome.toLowerCase() === nome.toLowerCase() &&
+        (c.empresa||'').toLowerCase() === empresa.toLowerCase()
+      );
+      if(jaExiste){ ignorados++; return; }
+      // garante empresa no array
+      if(empresa && !empresas.some(e => e.nome === empresa)){ empresas.push({nome:empresa,telefone:'',setor:'',site:''}); empresas.sort((a,b)=>a.nome.localeCompare(b.nome)); }
+      const status = statusValidos.includes(r['status']) ? r['status'] : 'lead';
+      contatos.push({
+        id: proxC++,
+        nome,
+        empresa,
+        cargo: (r['cargo']||'').trim(),
+        status,
+        telefone: (r['telefone']||'').trim(),
+        email: (r['email']||'').trim(),
+        info: (r['info']||'').trim(),
+      });
+      adicionados++;
+    });
+  }
+
+  if(importTipo === 'negocios'){
+    const etapasValidas = ETAPAS.map(e => e.chave);
+    rows.forEach(r => {
+      const titulo = (r['titulo'] || '').trim();
+      if(!titulo){ ignorados++; return; }
+      const empresa = (r['empresa'] || '').trim();
+      const jaExiste = negocios.some(n =>
+        n.titulo.toLowerCase() === titulo.toLowerCase() &&
+        (n.empresa||'').toLowerCase() === empresa.toLowerCase()
+      );
+      if(jaExiste){ ignorados++; return; }
+      if(empresa && !empresas.some(e => e.nome === empresa)){ empresas.push({nome:empresa,telefone:'',setor:'',site:''}); empresas.sort((a,b)=>a.nome.localeCompare(b.nome)); }
+      const etapa = etapasValidas.includes(r['etapa']) ? r['etapa'] : 'lead';
+      const dataEntrada = r['dataentrada'] || r['dataEntrada'] || hoje;
+      negocios.push({
+        id: proxN++,
+        titulo,
+        empresa,
+        owner: (r['owner']||'').trim(),
+        valor: parseFloat(r['valor'])||0,
+        valorFechado: r['valorfechado']||r['valorFechado'] ? parseFloat(r['valorfechado']||r['valorFechado'])||null : null,
+        etapa,
+        dataEntrada,
+        dataFechamento: r['datafechamento']||r['dataFechamento']||null,
+        motivo: (r['motivo']||'').trim(),
+        notas: [],
+        atividades: [],
+        historico: { lead: dataEntrada, qualificacao:null, negociacao:null, ganho:null, perdido:null },
+      });
+      adicionados++;
+    });
+  }
+
+  sincronizarStatusRelacionados();
+  salvarDados();
+  atualizarSelectEmpresas();
+  renderContatos();
+  renderEmpresas();
+  renderPipeline();
+  atualizarKPIs();
+
+  fecharModalImport();
+  alert(`✓ Importação concluída!\n\n${adicionados} registro${adicionados!==1?'s':''} adicionado${adicionados!==1?'s':''}.\n${ignorados} ignorado${ignorados!==1?'s':''} (duplicata ou linha inválida).`);
+}
+
+
 
 
 /* INIT */
 window.addEventListener('DOMContentLoaded', () => {
   carregarDados();
+  try{
+    normalizarEtapas();
+    renderPipelineConfig();
+    atualizarSelectEtapas();
+  }catch(e){ console.log(e); }
   atualizarSelectEmpresas();
   renderContatos();
   renderEmpresas();
@@ -2126,8 +2500,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
   if(typeof renderDashboard === 'function'){
     renderDashboard();
-renderOwners();
-atualizarSelectOwners();
+    renderOwners();
+    atualizarSelectOwners();
   }
 });
 
@@ -2136,14 +2510,14 @@ atualizarSelectOwners();
 function editarEmpresa(nome){
   const contatosEmpresa = contatos.filter(c => c.empresa === nome);
   const negociosEmpresa = negocios.filter(n => n.empresa === nome);
-
-  const primeiroContato = contatosEmpresa[0] || {};
+  const empObj = empresas.find(e => e.nome === nome) || {nome, telefone:'', setor:'', site:''};
 
   document.getElementById('empresa-antiga').value = nome;
   document.getElementById('empresa-nome').value = nome;
-  document.getElementById('empresa-setor').value = primeiroContato.setor || '';
-  document.getElementById('empresa-telefone').value = primeiroContato.telefone || '';
-  document.getElementById('empresa-info').value = primeiroContato.info || '';
+  document.getElementById('empresa-setor').value = empObj.setor || '';
+  document.getElementById('empresa-telefone').value = empObj.telefone || '';
+  document.getElementById('empresa-site').value = empObj.site || '';
+  document.getElementById('empresa-info').value = '';
 
   document.getElementById('empresa-contatos').innerHTML = contatosEmpresa.length
     ? contatosEmpresa.map(c => `
@@ -2195,26 +2569,24 @@ function salvarEmpresaEdicao(){
   const novo = document.getElementById('empresa-nome').value.trim();
   const setor = document.getElementById('empresa-setor').value.trim();
   const telefone = document.getElementById('empresa-telefone').value.trim();
-  const info = document.getElementById('empresa-info').value.trim();
+  const site = document.getElementById('empresa-site').value.trim();
 
   if(!novo) return;
 
-  empresas = empresas.map(e => e === antigo ? novo : e);
+  // Atualiza o objeto empresa
+  const idx = empresas.findIndex(e => e.nome === antigo);
+  if(idx !== -1){
+    empresas[idx] = {nome: novo, telefone, setor, site};
+  } else {
+    empresas.push({nome: novo, telefone, setor, site});
+  }
+  empresas.sort((a,b) => a.nome.localeCompare(b.nome));
 
-  contatos.forEach(c => {
-    if(c.empresa === antigo){
-      c.empresa = novo;
-      c.setor = setor;
-      c.telefone = telefone || c.telefone;
-      c.info = info || c.info;
-    }
-  });
-
-  negocios.forEach(n => {
-    if(n.empresa === antigo){
-      n.empresa = novo;
-    }
-  });
+  // Atualiza referências nos contatos e negócios se nome mudou
+  if(antigo !== novo){
+    contatos.forEach(c => { if(c.empresa === antigo) c.empresa = novo; });
+    negocios.forEach(n => { if(n.empresa === antigo) n.empresa = novo; });
+  }
 
   sincronizarStatusRelacionados();
   salvarDados();
@@ -2228,6 +2600,56 @@ function salvarEmpresaEdicao(){
 
 
 </script>
+
+<!-- MODAL IMPORTAÇÃO -->
+<div class="modal-overlay" id="modal-import" onclick="if(event.target===this)fecharModalImport()">
+  <div class="modal" style="width:640px;">
+    <div class="modal-title" id="import-titulo">Importar contatos</div>
+
+    <!-- instruções -->
+    <div id="import-instrucoes"></div>
+
+    <!-- drop zone -->
+    <div id="import-dropzone" style="
+      border:2px dashed var(--border-mid);
+      border-radius:8px;
+      padding:32px 20px;
+      text-align:center;
+      cursor:pointer;
+      transition:border-color .2s,background .2s;
+      margin-bottom:16px;
+    "
+    onclick="triggerFileInput()"
+    ondragover="event.preventDefault();this.style.borderColor='var(--cyan)';this.style.background='rgba(0,212,255,0.04)'"
+    ondragleave="this.style.borderColor='var(--border-mid)';this.style.background='none'"
+    ondrop="onDropImport(event)">
+      <svg style="width:28px;height:28px;color:var(--muted-dim);margin-bottom:10px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      <div style="font-size:13px;color:var(--muted);font-weight:600;">Arraste o CSV aqui ou clique para selecionar</div>
+      <div style="font-size:11px;color:var(--muted-dim);margin-top:4px;">Apenas arquivos .csv</div>
+    </div>
+
+    <!-- preview -->
+    <div id="import-preview" style="display:none;margin-bottom:16px;">
+      <div style="font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--cyan);margin-bottom:10px;display:flex;align-items:center;gap:8px;">
+        <span style="width:14px;height:2px;background:linear-gradient(to right,var(--cyan),var(--purple));display:block;"></span>
+        Pré-visualização
+      </div>
+      <div id="import-preview-info" style="font-size:12px;color:var(--muted);margin-bottom:8px;"></div>
+      <div id="import-preview-erros" style="margin-bottom:8px;"></div>
+      <div style="overflow-x:auto;border:1px solid var(--border);border-radius:6px;max-height:180px;overflow-y:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:11px;">
+          <thead id="import-preview-head" style="background:rgba(123,47,255,0.1);"></thead>
+          <tbody id="import-preview-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="fecharModalImport()">Cancelar</button>
+      <button class="btn-save" id="import-btn-confirmar" style="display:none" onclick="confirmarImport()">Importar</button>
+    </div>
+  </div>
+</div>
 
 <!-- MODAL EMPRESA -->
 <div class="modal-overlay" id="modal-empresa" onclick="if(event.target===this){fecharModalEmpresa()}">
@@ -2296,6 +2718,10 @@ function salvarEmpresaEdicao(){
       <div class="field">
         <label>Telefone principal</label>
         <input id="empresa-telefone" type="text" placeholder="(41) 99999-9999">
+      </div>
+      <div class="field">
+        <label>Site</label>
+        <input id="empresa-site" type="text" placeholder="www.empresa.com.br">
       </div>
     </div>
 
@@ -2379,19 +2805,6 @@ document.addEventListener('DOMContentLoaded', verificarLogin);
 </body>
 
 </html>
-
-
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-  try{
-    normalizarEtapas();
-    renderPipelineConfig();
-    atualizarSelectEtapas();
-  }catch(e){
-    console.log(e);
-  }
-});
-</script>
 
 
 <script>
