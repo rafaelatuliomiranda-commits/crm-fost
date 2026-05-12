@@ -94,8 +94,10 @@ tbody tr:hover td{background:rgba(123,47,255,0.07);}
 .pipeline-scroll-wrap::-webkit-scrollbar{height:4px;}
 .pipeline-scroll-wrap::-webkit-scrollbar-track{background:transparent;}
 .pipeline-scroll-wrap::-webkit-scrollbar-thumb{background:rgba(123,47,255,.3);border-radius:2px;}
-.pipeline{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:2px;background:var(--border);border-radius:10px;overflow:hidden;align-items:start;}
-.kanban-col{background:var(--card-bg);padding:16px 13px;min-height:460px;transition:background .15s;}
+.pipeline{display:flex;flex-direction:row;gap:2px;background:var(--border);border-radius:10px;overflow:visible;align-items:start;width:max-content;min-width:100%;}
+.kanban-col{background:var(--card-bg);padding:16px 13px;min-height:460px;min-width:260px;width:260px;flex-shrink:0;transition:background .15s;}
+.pipeline > .kanban-col:first-child{border-radius:10px 0 0 10px;}
+.pipeline > .kanban-col:last-child{border-radius:0 10px 10px 0;}
 .kanban-col.drag-over{background:rgba(123,47,255,0.17);outline:1px solid var(--border-mid);outline-offset:-1px;}
 .col-header{margin-bottom:13px;padding-bottom:11px;border-bottom:1px solid var(--border);}
 .col-title{display:flex;align-items:center;justify-content:space-between;font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted-dim);margin-bottom:3px;}
@@ -236,7 +238,6 @@ tbody tr:hover td{background:rgba(123,47,255,0.07);}
 
 @media(max-width:1100px){
   .kpi-row{grid-template-columns:repeat(4,1fr);}
-  .pipeline{grid-template-columns:repeat(3,1fr);}
   .dash-grid{grid-template-columns:1fr;}
   .dash-grid-3{grid-template-columns:1fr 1fr;}
 }
@@ -317,25 +318,7 @@ tbody tr:hover td{background:rgba(123,47,255,0.07);}
     -webkit-overflow-scrolling:touch;
   }
   .pipeline-scroll-wrap::-webkit-scrollbar{height:3px;}
-  .pipeline{
-    display:flex;
-    flex-direction:row;
-    grid-template-columns:unset;
-    width:max-content;
-    min-width:100%;
-    border-radius:10px;
-    overflow:visible;
-    gap:2px;
-    background:var(--border);
-  }
-  .kanban-col{
-    width:260px;
-    min-width:260px;
-    min-height:300px;
-    border-radius:0;
-  }
-  .pipeline > .kanban-col:first-child{border-radius:10px 0 0 10px;}
-  .pipeline > .kanban-col:last-child{border-radius:0 10px 10px 0;}
+  .kanban-col{ width:240px; min-width:240px; min-height:300px; }
 
   /* ── TABELAS: scroll horizontal ── */
   .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
@@ -368,80 +351,6 @@ tbody tr:hover td{background:rgba(123,47,255,0.07);}
 }
 
 
-/* LOGIN */
-.login-screen{
-  position:fixed;
-  inset:0;
-  z-index:9999;
-  background:linear-gradient(135deg,#06006e,#12005a);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-}
-
-.login-card{
-  width:420px;
-  max-width:92vw;
-  background:rgba(123,47,255,0.08);
-  border:1px solid rgba(123,47,255,0.25);
-  border-radius:18px;
-  padding:36px;
-  backdrop-filter:blur(12px);
-  box-shadow:0 30px 80px rgba(0,0,0,.45);
-}
-
-.login-logo{
-  font-family:'Bricolage Grotesque',sans-serif;
-  font-size:42px;
-  font-weight:800;
-  margin-bottom:12px;
-  background:linear-gradient(135deg,var(--cyan),var(--purple-soft));
-  -webkit-background-clip:text;
-  -webkit-text-fill-color:transparent;
-}
-
-.login-sub{
-  font-size:14px;
-  color:var(--muted);
-  margin-bottom:24px;
-  line-height:1.5;
-}
-
-.login-input{
-  width:100%;
-  padding:14px 16px;
-  border-radius:10px;
-  border:1px solid var(--border);
-  background:rgba(123,47,255,0.08);
-  color:white;
-  font-size:15px;
-  outline:none;
-  margin-bottom:14px;
-}
-
-.login-input:focus{
-  border-color:var(--cyan);
-}
-
-.login-btn{
-  width:100%;
-  padding:14px;
-  border:none;
-  border-radius:10px;
-  background:linear-gradient(135deg,var(--purple),var(--purple-soft));
-  color:white;
-  font-size:14px;
-  font-weight:700;
-  cursor:pointer;
-}
-
-.login-error{
-  margin-top:12px;
-  font-size:12px;
-  color:#ff8f8f;
-  display:none;
-}
-
 .logout-btn{
   padding:7px 14px;
   border:none;
@@ -463,35 +372,6 @@ tbody tr:hover td{background:rgba(123,47,255,0.07);}
 </style>
 </head>
 <body>
-
-<div class="login-screen" id="login-screen">
-  <div class="login-card">
-
-    <div class="login-logo">fost</div>
-
-    <div class="login-sub">
-      CRM protegido.<br>
-      Digite a senha para acessar.
-    </div>
-
-    <input
-      type="password"
-      id="login-password"
-      class="login-input"
-      placeholder="Senha"
-      onkeydown="if(event.key==='Enter'){fazerLogin()}"
-    >
-
-    <button class="login-btn" onclick="fazerLogin()">
-      Entrar
-    </button>
-
-    <div class="login-error" id="login-error">
-      Senha inválida.
-    </div>
-
-  </div>
-</div>
 
 <!-- TELA DE CONFIGURAÇÃO GIST -->
 <div id="gist-setup-screen" style="display:none;position:fixed;inset:0;z-index:9998;background:linear-gradient(135deg,#06006e,#12005a);align-items:center;justify-content:center;">
@@ -1081,6 +961,13 @@ function limparConfigGist(){
   localStorage.removeItem('crm_gist_token');
   localStorage.removeItem('crm_gist_id');
   mostrarTelaGist();
+}
+
+function logoutCRM(){
+  if(!confirm('Desconectar e sair? Será necessário informar o token novamente.')) return;
+  localStorage.removeItem('crm_gist_token');
+  localStorage.removeItem('crm_gist_id');
+  location.reload();
 }
 
 async function salvarDados(){
@@ -3107,59 +2994,6 @@ function salvarEmpresaEdicao(){
 </div>
 
 
-
-<script>
-
-const CRM_PASSWORD = '140425';
-
-function verificarLogin(){
-
-  const autenticado = localStorage.getItem('fost_auth');
-
-  if(autenticado === 'ok'){
-
-    document.getElementById('login-screen').style.display = 'none';
-
-  }else{
-
-    document.getElementById('login-screen').style.display = 'flex';
-
-  }
-}
-
-function fazerLogin(){
-
-  const senha = document.getElementById('login-password').value;
-
-  const erro = document.getElementById('login-error');
-
-  if(senha === CRM_PASSWORD){
-
-    localStorage.setItem('fost_auth','ok');
-
-    document.getElementById('login-screen').style.display = 'none';
-
-    erro.style.display = 'none';
-
-    return;
-  }
-
-  erro.style.display = 'block';
-}
-
-function logoutCRM(){
-
-  localStorage.removeItem('fost_auth');
-
-  location.reload();
-}
-
-window.fazerLogin = fazerLogin;
-window.logoutCRM = logoutCRM;
-
-document.addEventListener('DOMContentLoaded', verificarLogin);
-
-</script>
 
 </body>
 
