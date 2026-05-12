@@ -423,6 +423,10 @@ tbody tr:hover td{background:rgba(123,47,255,0.07);}
       Empresas
     </button>
 
+    <button class="nav-tab" onclick="switchTab('atividades')" id="tab-btn-atividades">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="9" y1="15" x2="9" y2="15" stroke-width="3" stroke-linecap="round"/><line x1="15" y1="15" x2="15" y2="15" stroke-width="3" stroke-linecap="round"/></svg>
+      Atividades
+    </button>
     <button class="nav-tab active" onclick="switchTab('dashboard')" id="tab-btn-dashboard">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
       Dashboard
@@ -455,6 +459,10 @@ tbody tr:hover td{background:rgba(123,47,255,0.07);}
   <button class="bottom-nav-btn" onclick="switchTab('pipeline')" id="bottom-btn-pipeline">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="4" height="18" rx="1"/><rect x="10" y="8" width="4" height="13" rx="1"/><rect x="17" y="5" width="4" height="16" rx="1"/></svg>
     Pipeline
+  </button>
+  <button class="bottom-nav-btn" onclick="switchTab('atividades')" id="bottom-btn-atividades">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    Atividades
   </button>
   <button class="bottom-nav-btn" onclick="switchTab('contatos')" id="bottom-btn-contatos">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
@@ -503,10 +511,10 @@ tbody tr:hover td{background:rgba(123,47,255,0.07);}
       <div class="kpi-value" id="kpi-conv-qtd">0%</div>
       <div class="kpi-sub">por nº negócios</div>
     </div>
-    <div class="kpi-card">
-      <div class="kpi-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Conv. valor</div>
-      <div class="kpi-value cyan" id="kpi-conv-val">0%</div>
-      <div class="kpi-sub">pelo R$ total</div>
+    <div class="kpi-card" style="cursor:pointer;" onclick="switchTab('atividades')">
+      <div class="kpi-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Atividades</div>
+      <div class="kpi-value" id="kpi-atividades">0</div>
+      <div class="kpi-sub" id="kpi-atividades-sub">pendentes</div>
     </div>
   </div>
 
@@ -564,6 +572,32 @@ tbody tr:hover td{background:rgba(123,47,255,0.07);}
         <tbody id="tabela-contatos"></tbody>
       </table>
     </div>
+  </div>
+
+  <!-- ABA ATIVIDADES -->
+  <div class="tab-section" id="sec-atividades">
+    <div class="toolbar">
+      <div class="pipeline-label">Atividades</div>
+      <div style="flex:1"></div>
+      <select class="toolbar-select" id="filtro-atv-tipo" onchange="renderAtividades()">
+        <option value="">Todos os tipos</option>
+        <option value="follow-up">Follow-up</option>
+        <option value="proposta">Proposta</option>
+        <option value="email">E-mail</option>
+        <option value="reuniao">Reunião</option>
+        <option value="outro">Outro</option>
+      </select>
+      <select class="toolbar-select" id="filtro-atv-status" onchange="renderAtividades()">
+        <option value="">Todos</option>
+        <option value="pendente">Pendentes</option>
+        <option value="concluida">Concluídas</option>
+      </select>
+      <button class="btn-add" onclick="abrirModalAtividade()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Atividade
+      </button>
+    </div>
+    <div id="atividades-lista"></div>
   </div>
 
   <!-- ABA PIPELINE -->
@@ -713,6 +747,62 @@ tbody tr:hover td{background:rgba(123,47,255,0.07);}
   </div>
 
 </main>
+
+<!-- MODAL ATIVIDADE -->
+<div class="modal-overlay" id="modal-atividade" onclick="if(event.target===this)fecharModalAtividade()">
+  <div class="modal">
+    <div class="modal-title" id="modal-atv-titulo">Nova atividade</div>
+
+    <div class="field">
+      <label>Título *</label>
+      <input id="atv-titulo" type="text" placeholder="Ex: Enviar proposta comercial">
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label>Tipo</label>
+        <select id="atv-tipo">
+          <option value="follow-up">Follow-up</option>
+          <option value="proposta">Proposta</option>
+          <option value="email">E-mail</option>
+          <option value="reuniao">Reunião</option>
+          <option value="outro">Outro</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Data *</label>
+        <input id="atv-data" type="date">
+      </div>
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label>Negócio vinculado</label>
+        <select id="atv-negocio" onchange="sincronizarVinculo('negocio')">
+          <option value="">Nenhum</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Contato vinculado</label>
+        <select id="atv-contato" onchange="sincronizarVinculo('contato')">
+          <option value="">Nenhum</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Observação</label>
+      <textarea id="atv-obs" placeholder="Detalhes da atividade…"></textarea>
+    </div>
+
+    <input type="hidden" id="atv-id">
+
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="fecharModalAtividade()">Cancelar</button>
+      <button class="btn-save" onclick="salvarAtividade()">Salvar</button>
+    </div>
+  </div>
+</div>
 
 <!-- MODAL CONTATO -->
 <div class="modal-overlay" id="modal-contato" onclick="fecharModalFora(event,'contato')">
@@ -979,12 +1069,14 @@ async function salvarDados(){
   localStorage.setItem(storageKey('proxN'), proxN);
   localStorage.setItem(storageKey('owners'), JSON.stringify(owners));
   localStorage.setItem(storageKey('etapas'), JSON.stringify(ETAPAS));
+  localStorage.setItem(storageKey('atividades'), JSON.stringify(atividades));
+  localStorage.setItem(storageKey('proxA'), proxA);
 
   // sincroniza com Gist se configurado
   if(!gistConfigurado()) return;
 
   const payload = { contatos, negocios, empresas, owners, proxC, proxN,
-                    etapas: ETAPAS };
+                    etapas: ETAPAS, atividades, proxA };
   try {
     const res = await fetch(`https://api.github.com/gists/${gistId()}`, {
       method: 'PATCH',
@@ -1027,10 +1119,12 @@ async function carregarDados(){
             empresas = d.empresas.map(e => typeof e==='string'
               ? {nome:e,telefone:'',setor:'',site:''} : e);
           }
-          if(d.owners)  owners  = d.owners;
-          if(d.proxC)   proxC   = d.proxC;
-          if(d.proxN)   proxN   = d.proxN;
-          if(d.etapas)  ETAPAS  = d.etapas;
+          if(d.owners)     owners     = d.owners;
+          if(d.proxC)      proxC      = d.proxC;
+          if(d.proxN)      proxN      = d.proxN;
+          if(d.etapas)     ETAPAS     = d.etapas;
+          if(d.atividades) atividades = d.atividades;
+          if(d.proxA)      proxA      = d.proxA;
           // espelha no localStorage para uso offline
           localStorage.setItem(storageKey('contatos'), JSON.stringify(contatos));
           localStorage.setItem(storageKey('negocios'), JSON.stringify(negocios));
@@ -1039,6 +1133,8 @@ async function carregarDados(){
           localStorage.setItem(storageKey('proxN'), proxN);
           localStorage.setItem(storageKey('owners'), JSON.stringify(owners));
           localStorage.setItem(storageKey('etapas'), JSON.stringify(ETAPAS));
+          localStorage.setItem(storageKey('atividades'), JSON.stringify(atividades));
+          localStorage.setItem(storageKey('proxA'), proxA);
           mostrarSyncStatus('ok');
           return;
         }
@@ -1068,9 +1164,13 @@ async function carregarDados(){
   if(ownersSalvos) owners = JSON.parse(ownersSalvos);
   proxC = parseInt(localStorage.getItem(storageKey('proxC'))) || proxC;
   proxN = parseInt(localStorage.getItem(storageKey('proxN'))) || proxN;
+  proxA = parseInt(localStorage.getItem(storageKey('proxA'))) || proxA;
 
   const etapasSalvas = localStorage.getItem(storageKey('etapas'));
   if(etapasSalvas) ETAPAS = JSON.parse(etapasSalvas);
+
+  const atividadesSalvas = localStorage.getItem(storageKey('atividades'));
+  if(atividadesSalvas) atividades = JSON.parse(atividadesSalvas);
 }
 
 let _syncTimeout = null;
@@ -1143,6 +1243,16 @@ function atualizarKPIs(){
   document.getElementById('kpi-ciclo').textContent=cicloMedio!==null?cicloMedio+' d':'— d';
   document.getElementById('kpi-conv-qtd').textContent=convQtd+'%';
   document.getElementById('kpi-conv-val').textContent=convVal+'%';
+
+  const atvPendentes = atividades.filter(a => !a.done);
+  const atvAtrasadas = atvPendentes.filter(a => a.data < new Date().toISOString().slice(0,10));
+  const kpiAtv = document.getElementById('kpi-atividades');
+  if(kpiAtv){
+    kpiAtv.textContent = atvPendentes.length;
+    kpiAtv.style.color = atvAtrasadas.length > 0 ? 'var(--danger)' : '';
+  }
+  const kpiAtvSub = document.getElementById('kpi-atividades-sub');
+  if(kpiAtvSub) kpiAtvSub.textContent = atvAtrasadas.length > 0 ? `${atvAtrasadas.length} atrasada${atvAtrasadas.length>1?'s':''}` : 'pendentes';
 }
 
 
@@ -2174,7 +2284,7 @@ function switchTab(nome){
   const btnBot = document.getElementById('bottom-btn-'+nome);
   if(btnBot) btnBot.classList.add('active');
   if(nome==='dashboard'){ sincronizarStatusRelacionados(); renderDashboard(); }
-  if(nome==='pipeline'){ renderPipeline(); }
+  if(nome==='atividades'){ renderAtividades(); }
   if(nome==='contatos'){ renderContatos(); }
   if(nome==='empresas'){ renderEmpresas(); }
   if(nome==='configuracoes'){ renderPipelineConfig(); renderOwners(); atualizarSelectOwners(); fecharTelaGist(); }
@@ -2405,6 +2515,249 @@ function excluirNegocio(id){if(!confirm('Remover este negócio?'))return;negocio
 renderOwners();
 atualizarSelectOwners();}
 
+
+/* ═══════════════ ATIVIDADES ═══════════════ */
+
+let atividades = [];
+let proxA = 1;
+
+const TIPO_LABELS = {
+  'follow-up': { label:'Follow-up', icon:'🔁', cor:'#00D4FF' },
+  'proposta':  { label:'Proposta',  icon:'📄', cor:'#9B59FF' },
+  'email':     { label:'E-mail',    icon:'✉',  cor:'#34d399' },
+  'reuniao':   { label:'Reunião',   icon:'🤝', cor:'#fbbf24' },
+  'outro':     { label:'Outro',     icon:'•',  cor:'#94a3b8' },
+};
+
+function renderAtividades(){
+  const lista = document.getElementById('atividades-lista');
+  if(!lista) return;
+
+  const filtroTipo   = document.getElementById('filtro-atv-tipo')?.value   || '';
+  const filtroStatus = document.getElementById('filtro-atv-status')?.value || '';
+
+  let atvs = [...atividades];
+  if(filtroTipo)   atvs = atvs.filter(a => a.tipo === filtroTipo);
+  if(filtroStatus) atvs = atvs.filter(a => filtroStatus === 'concluida' ? a.done : !a.done);
+
+  // ordena: atrasadas primeiro, depois por data asc
+  atvs.sort((a,b) => a.data < b.data ? -1 : a.data > b.data ? 1 : 0);
+
+  if(atvs.length === 0){
+    lista.innerHTML = `<div style="text-align:center;padding:60px 20px;color:var(--muted-dim);">
+      <div style="font-size:32px;margin-bottom:12px;">📋</div>
+      <div style="font-size:14px;font-weight:600;color:var(--muted);">Nenhuma atividade encontrada</div>
+      <div style="font-size:12px;margin-top:6px;">Crie uma atividade com o botão acima.</div>
+    </div>`;
+    return;
+  }
+
+  // agrupa por grupo de data
+  const grupos = {};
+  atvs.forEach(a => {
+    const g = grupoData(a.data);
+    if(!grupos[g]) grupos[g] = [];
+    grupos[g].push(a);
+  });
+
+  const ordemGrupos = ['Atrasadas','Hoje','Amanhã','Esta semana','Próximas','Concluídas'];
+  const grupasOrdenados = Object.keys(grupos).sort((a,b) => {
+    const ia = ordemGrupos.indexOf(a);
+    const ib = ordemGrupos.indexOf(b);
+    return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+  });
+
+  lista.innerHTML = grupasOrdenados.map(grupo => {
+    const itens = grupos[grupo];
+    const corGrupo = grupo === 'Atrasadas' ? 'var(--danger)' :
+                     grupo === 'Hoje'       ? 'var(--cyan)'   :
+                     grupo === 'Amanhã'     ? '#fbbf24'       : 'var(--muted-dim)';
+    return `
+      <div style="margin-bottom:24px;">
+        <div style="font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:${corGrupo};margin-bottom:10px;display:flex;align-items:center;gap:8px;">
+          <span style="width:20px;height:2px;background:${corGrupo};display:block;border-radius:2px;"></span>
+          ${grupo} <span style="font-size:10px;color:var(--muted-dim);font-weight:400;">(${itens.length})</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          ${itens.map(a => renderCardAtividade(a)).join('')}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function grupoData(data){
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
+  const amanha = new Date(hoje); amanha.setDate(amanha.getDate()+1);
+  const semana = new Date(hoje); semana.setDate(semana.getDate()+7);
+  const d = new Date(data+'T00:00:00');
+
+  if(d < hoje)   return 'Atrasadas';
+  if(d.getTime() === hoje.getTime()) return 'Hoje';
+  if(d.getTime() === amanha.getTime()) return 'Amanhã';
+  if(d <= semana) return 'Esta semana';
+  return 'Próximas';
+}
+
+function renderCardAtividade(a){
+  const tipo = TIPO_LABELS[a.tipo] || TIPO_LABELS['outro'];
+  const neg  = a.negocioId ? negocios.find(n => n.id === a.negocioId) : null;
+  const con  = a.contatoId ? contatos.find(c => c.id === a.contatoId) : null;
+  const dataFmt = a.data ? new Date(a.data+'T00:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'short'}) : '';
+
+  return `<div style="
+    display:flex;align-items:flex-start;gap:12px;
+    background:var(--card-bg);border:1px solid var(--border);
+    border-left:3px solid ${a.done ? 'var(--border)' : tipo.cor};
+    border-radius:8px;padding:12px 14px;
+    opacity:${a.done ? '0.55' : '1'};
+    transition:opacity .2s;
+  ">
+    <button onclick="toggleAtividade(${a.id})" title="${a.done?'Reabrir':'Concluir'}" style="
+      width:20px;height:20px;min-width:20px;border-radius:50%;border:2px solid ${a.done?'var(--green)':'var(--border-mid)'};
+      background:${a.done?'var(--green)':'transparent'};cursor:pointer;
+      display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;
+    ">${a.done ? '<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="width:11px;height:11px;"><polyline points="20 6 9 17 4 12"/></svg>' : ''}</button>
+
+    <div style="flex:1;min-width:0;">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px;">
+        <span style="font-size:13px;font-weight:600;color:${a.done?'var(--muted-dim)':'var(--white)'};text-decoration:${a.done?'line-through':'none'};">${a.titulo}</span>
+        <span style="font-size:10px;font-weight:700;letter-spacing:.08em;padding:2px 7px;border-radius:3px;background:rgba(0,0,0,.2);color:${tipo.cor};">${tipo.icon} ${tipo.label}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--muted-dim);">
+        <span>📅 ${dataFmt}</span>
+        ${neg ? `<span style="cursor:pointer;color:var(--cyan);" onclick="switchTab('pipeline')">${neg.titulo}</span>` : ''}
+        ${con ? `<span style="cursor:pointer;color:var(--purple-soft);" onclick="switchTab('contatos')">${con.nome}</span>` : ''}
+        ${a.obs ? `<span style="color:var(--muted);">${a.obs}</span>` : ''}
+      </div>
+    </div>
+
+    <div style="display:flex;gap:6px;flex-shrink:0;">
+      <button class="icon-btn" onclick="editarAtividade(${a.id})" title="Editar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      </button>
+      <button class="icon-btn danger" onclick="excluirAtividade(${a.id})" title="Excluir">
+        ${SVG_DEL}
+      </button>
+    </div>
+  </div>`;
+}
+
+function abrirModalAtividade(negocioId, contatoId){
+  // popula selects
+  const selNeg = document.getElementById('atv-negocio');
+  const selCon = document.getElementById('atv-contato');
+  selNeg.innerHTML = '<option value="">Nenhum</option>' +
+    negocios.filter(n => n.etapa !== 'perdido').map(n =>
+      `<option value="${n.id}">${n.titulo}${n.empresa?' — '+n.empresa:''}</option>`).join('');
+  selCon.innerHTML = '<option value="">Nenhum</option>' +
+    contatos.map(c => `<option value="${c.id}">${c.nome}${c.empresa?' — '+c.empresa:''}</option>`).join('');
+
+  document.getElementById('modal-atv-titulo').textContent = 'Nova atividade';
+  document.getElementById('atv-id').value    = '';
+  document.getElementById('atv-titulo').value = '';
+  document.getElementById('atv-tipo').value   = 'follow-up';
+  document.getElementById('atv-data').value   = hoje;
+  document.getElementById('atv-obs').value    = '';
+  selNeg.value = negocioId || '';
+  selCon.value = contatoId || '';
+
+  document.getElementById('modal-atividade').classList.add('open');
+}
+
+function fecharModalAtividade(){
+  document.getElementById('modal-atividade').classList.remove('open');
+}
+
+function sincronizarVinculo(origem){
+  // quando seleciona negócio, filtra contatos dessa empresa
+  if(origem === 'negocio'){
+    const negId = parseInt(document.getElementById('atv-negocio').value);
+    const neg = negId ? negocios.find(n => n.id === negId) : null;
+    if(neg && neg.empresa){
+      const selCon = document.getElementById('atv-contato');
+      const contatosEmpresa = contatos.filter(c => c.empresa === neg.empresa);
+      selCon.innerHTML = '<option value="">Nenhum</option>' +
+        contatosEmpresa.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
+    }
+  }
+}
+
+function salvarAtividade(){
+  const titulo = document.getElementById('atv-titulo').value.trim();
+  const data   = document.getElementById('atv-data').value;
+  if(!titulo || !data){ alert('Preencha pelo menos o título e a data.'); return; }
+
+  const id = parseInt(document.getElementById('atv-id').value) || null;
+  const negId = parseInt(document.getElementById('atv-negocio').value) || null;
+  const conId = parseInt(document.getElementById('atv-contato').value) || null;
+
+  if(id){
+    const idx = atividades.findIndex(a => a.id === id);
+    if(idx !== -1){
+      atividades[idx] = { ...atividades[idx],
+        titulo, data, tipo: document.getElementById('atv-tipo').value,
+        obs: document.getElementById('atv-obs').value.trim(),
+        negocioId: negId, contatoId: conId,
+      };
+    }
+  } else {
+    atividades.push({
+      id: proxA++,
+      titulo, data,
+      tipo: document.getElementById('atv-tipo').value,
+      obs:  document.getElementById('atv-obs').value.trim(),
+      negocioId: negId,
+      contatoId: conId,
+      done: false,
+      criadaEm: hoje,
+    });
+  }
+
+  salvarDados();
+  fecharModalAtividade();
+  renderAtividades();
+  atualizarKPIs();
+}
+
+function editarAtividade(id){
+  const a = atividades.find(x => x.id === id);
+  if(!a) return;
+
+  const selNeg = document.getElementById('atv-negocio');
+  const selCon = document.getElementById('atv-contato');
+  selNeg.innerHTML = '<option value="">Nenhum</option>' +
+    negocios.map(n => `<option value="${n.id}">${n.titulo}${n.empresa?' — '+n.empresa:''}</option>`).join('');
+  selCon.innerHTML = '<option value="">Nenhum</option>' +
+    contatos.map(c => `<option value="${c.id}">${c.nome}${c.empresa?' — '+c.empresa:''}</option>`).join('');
+
+  document.getElementById('modal-atv-titulo').textContent = 'Editar atividade';
+  document.getElementById('atv-id').value     = a.id;
+  document.getElementById('atv-titulo').value = a.titulo;
+  document.getElementById('atv-tipo').value   = a.tipo;
+  document.getElementById('atv-data').value   = a.data;
+  document.getElementById('atv-obs').value    = a.obs || '';
+  selNeg.value = a.negocioId || '';
+  selCon.value = a.contatoId || '';
+
+  document.getElementById('modal-atividade').classList.add('open');
+}
+
+function toggleAtividade(id){
+  const a = atividades.find(x => x.id === id);
+  if(!a) return;
+  a.done = !a.done;
+  salvarDados();
+  renderAtividades();
+  atualizarKPIs();
+}
+
+function excluirAtividade(id){
+  if(!confirm('Excluir esta atividade?')) return;
+  atividades = atividades.filter(a => a.id !== id);
+  salvarDados();
+  renderAtividades();
+  atualizarKPIs();
+}
 
 /* ═══════════════ IMPORTAÇÃO CSV ═══════════════ */
 
