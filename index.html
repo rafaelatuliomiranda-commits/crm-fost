@@ -493,7 +493,34 @@ tbody tr:hover td{background:rgba(123,47,255,0.07);}
   </div>
 </div>
 
-<div class="orb orb-1"></div>
+<!-- TELA DE CONFIGURAÇÃO GIST -->
+<div id="gist-setup-screen" style="display:none;position:fixed;inset:0;z-index:9998;background:linear-gradient(135deg,#06006e,#12005a);align-items:center;justify-content:center;">
+  <div style="width:480px;max-width:92vw;background:rgba(123,47,255,0.08);border:1px solid rgba(123,47,255,0.25);border-radius:16px;padding:40px 36px;">
+
+    <div style="font-family:'Bricolage Grotesque',sans-serif;font-size:26px;font-weight:800;background:linear-gradient(135deg,#00D4FF,#9B59FF);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px;">Sincronização</div>
+    <div style="font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:28px;line-height:1.6;">Configure o GitHub Gist para sincronizar seus dados entre dispositivos. Os dados ficam salvos na sua conta do GitHub — só você tem acesso.</div>
+
+    <div style="margin-bottom:16px;">
+      <label style="display:block;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,0.4);margin-bottom:8px;">Token de acesso (GitHub)</label>
+      <input id="gist-token-input" type="password" placeholder="ghp_..." style="width:100%;padding:11px 14px;background:rgba(123,47,255,0.1);border:1px solid rgba(123,47,255,0.3);border-radius:8px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;color:white;outline:none;box-sizing:border-box;">
+      <div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;">github.com → Settings → Developer settings → Personal access tokens → Tokens (classic) → escopo: gist</div>
+    </div>
+
+    <div style="margin-bottom:24px;">
+      <label style="display:block;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,0.4);margin-bottom:8px;">ID do Gist</label>
+      <input id="gist-id-input" type="text" placeholder="Ex: 3f1b4a30909746064647e14c52eb2bdd" style="width:100%;padding:11px 14px;background:rgba(123,47,255,0.1);border:1px solid rgba(123,47,255,0.3);border-radius:8px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;color:white;outline:none;box-sizing:border-box;">
+      <div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;">gist.github.com → Crie um Secret Gist com arquivo crm-data.json e conteúdo {} → copie o ID da URL</div>
+    </div>
+
+    <div id="gist-setup-error" style="display:none;color:#ff6b6b;font-size:12px;margin-bottom:16px;"></div>
+
+    <div style="display:flex;gap:10px;">
+      <button onclick="salvarConfigGist()" style="flex:1;padding:12px;background:linear-gradient(135deg,#7B2FFF,#9B59FF);border:none;border-radius:8px;color:white;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;">Conectar e sincronizar</button>
+      <button onclick="fecharTelaGist()" style="padding:12px 18px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:rgba(255,255,255,0.5);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;cursor:pointer;">Pular (só local)</button>
+    </div>
+
+  </div>
+</div>
 <div class="orb orb-2"></div>
 
 <nav>
@@ -532,6 +559,7 @@ tbody tr:hover td{background:rgba(123,47,255,0.07);}
   </div>
   
 <div class="nav-right">
+  <div id="sync-status" style="opacity:0;transition:opacity .5s;"></div>
   <span class="nav-badge" id="workspace-badge">workspace</span>
   <button class="logout-btn" onclick="logoutCRM()">Sair</button>
 </div>
@@ -692,8 +720,25 @@ tbody tr:hover td{background:rgba(123,47,255,0.07);}
     <div class="dash-full">
       <div class="dash-card">
 
-        
-<div class="dash-card-title">
+        <div class="dash-card-title">
+          Sincronização GitHub Gist
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:28px;align-items:center;">
+          <button type="button" class="btn-add" onclick="mostrarTelaGist()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
+            Configurar Gist
+          </button>
+          <button type="button" class="btn-add" onclick="carregarDados().then(()=>{renderPipeline();renderContatos();renderEmpresas();atualizarKPIs();if(typeof renderDashboard==='function')renderDashboard();})" style="background:linear-gradient(135deg,#0f766e,#0d9488);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4"/></svg>
+            Forçar sincronização
+          </button>
+          <button type="button" onclick="limparConfigGist()" style="padding:9px 18px;background:none;border:1px solid rgba(255,107,107,0.3);border-radius:6px;color:#ff6b6b;font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;">
+            Desconectar
+          </button>
+        </div>
+        <div id="gist-status-config" style="font-size:12px;color:rgba(255,255,255,0.3);margin-top:-20px;margin-bottom:28px;"></div>
+
+        <div class="dash-card-title">
           Pipeline
         </div>
 
@@ -983,10 +1028,63 @@ let owners = ['João Silva','Maria Torres'];
 let empresas = [...new Set(contatos.map(c => c.empresa).filter(Boolean))].sort()
   .map(nome => ({nome, telefone:'', setor:'', site:''}));
 
-/* STORAGE */
-function salvarDados(){
-  console.log('SALVANDO DADOS CRM');
+/* ═══════════════ GIST SYNC ═══════════════ */
 
+function gistToken(){ return localStorage.getItem('crm_gist_token') || ''; }
+function gistId(){    return localStorage.getItem('crm_gist_id')    || ''; }
+
+function gistConfigurado(){
+  return gistToken().length > 0 && gistId().length > 0;
+}
+
+function mostrarTelaGist(){
+  const screen = document.getElementById('gist-setup-screen');
+  screen.style.display = 'flex';
+  // pré-preenche se já tem valores
+  document.getElementById('gist-token-input').value = gistToken();
+  document.getElementById('gist-id-input').value    = gistId();
+  document.getElementById('gist-setup-error').style.display = 'none';
+}
+function fecharTelaGist(){
+  document.getElementById('gist-setup-screen').style.display = 'none';
+  // atualiza status na aba configurações
+  const statusEl = document.getElementById('gist-status-config');
+  if(statusEl){
+    if(gistConfigurado()){
+      statusEl.innerHTML = `<span style="color:#34d399;">● Conectado</span> — ID: <code style="font-size:11px;opacity:.6;">${gistId().substring(0,8)}…</code>`;
+    } else {
+      statusEl.innerHTML = `<span style="color:#fbbf24;">● Não configurado</span> — dados salvos apenas neste navegador.`;
+    }
+  }
+}
+
+function salvarConfigGist(){
+  const token = document.getElementById('gist-token-input').value.trim();
+  const id    = document.getElementById('gist-id-input').value.trim();
+  const erro  = document.getElementById('gist-setup-error');
+
+  if(!token || !id){ erro.textContent = 'Preencha os dois campos.'; erro.style.display='block'; return; }
+
+  localStorage.setItem('crm_gist_token', token);
+  localStorage.setItem('crm_gist_id',    id);
+  erro.style.display = 'none';
+  fecharTelaGist();
+  // recarrega os dados do Gist agora
+  carregarDados().then(() => {
+    renderPipeline(); renderContatos(); renderEmpresas(); atualizarKPIs();
+    if(typeof renderDashboard==='function') renderDashboard();
+  });
+}
+
+function limparConfigGist(){
+  if(!confirm('Desconectar o Gist? Os dados locais serão mantidos, mas a sincronização para.')) return;
+  localStorage.removeItem('crm_gist_token');
+  localStorage.removeItem('crm_gist_id');
+  mostrarTelaGist();
+}
+
+async function salvarDados(){
+  // sempre salva no localStorage como fallback
   localStorage.setItem(storageKey('contatos'), JSON.stringify(contatos));
   localStorage.setItem(storageKey('negocios'), JSON.stringify(negocios));
   localStorage.setItem(storageKey('empresas'), JSON.stringify(empresas));
@@ -994,29 +1092,115 @@ function salvarDados(){
   localStorage.setItem(storageKey('proxN'), proxN);
   localStorage.setItem(storageKey('owners'), JSON.stringify(owners));
   localStorage.setItem(storageKey('etapas'), JSON.stringify(ETAPAS));
+
+  // sincroniza com Gist se configurado
+  if(!gistConfigurado()) return;
+
+  const payload = { contatos, negocios, empresas, owners, proxC, proxN,
+                    etapas: ETAPAS };
+  try {
+    const res = await fetch(`https://api.github.com/gists/${gistId()}`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `token ${gistToken()}`,
+        'Content-Type':  'application/json',
+      },
+      body: JSON.stringify({
+        files: { 'crm-data.json': { content: JSON.stringify(payload, null, 2) } }
+      })
+    });
+    if(!res.ok){
+      const err = await res.json();
+      console.warn('Gist sync error:', err.message);
+      mostrarSyncStatus('erro');
+    } else {
+      mostrarSyncStatus('ok');
+    }
+  } catch(e){
+    console.warn('Gist offline:', e);
+    mostrarSyncStatus('offline');
+  }
 }
 
-function carregarDados(){
-  console.log('CARREGANDO DADOS CRM');
+async function carregarDados(){
+  // tenta carregar do Gist primeiro
+  if(gistConfigurado()){
+    try {
+      const res = await fetch(`https://api.github.com/gists/${gistId()}`, {
+        headers: { 'Authorization': `token ${gistToken()}` }
+      });
+      if(res.ok){
+        const data = await res.json();
+        const raw  = data.files['crm-data.json']?.content;
+        if(raw){
+          const d = JSON.parse(raw);
+          if(d.contatos) contatos = d.contatos;
+          if(d.negocios) negocios = d.negocios;
+          if(d.empresas){
+            empresas = d.empresas.map(e => typeof e==='string'
+              ? {nome:e,telefone:'',setor:'',site:''} : e);
+          }
+          if(d.owners)  owners  = d.owners;
+          if(d.proxC)   proxC   = d.proxC;
+          if(d.proxN)   proxN   = d.proxN;
+          if(d.etapas)  ETAPAS  = d.etapas;
+          // espelha no localStorage para uso offline
+          localStorage.setItem(storageKey('contatos'), JSON.stringify(contatos));
+          localStorage.setItem(storageKey('negocios'), JSON.stringify(negocios));
+          localStorage.setItem(storageKey('empresas'), JSON.stringify(empresas));
+          localStorage.setItem(storageKey('proxC'), proxC);
+          localStorage.setItem(storageKey('proxN'), proxN);
+          localStorage.setItem(storageKey('owners'), JSON.stringify(owners));
+          localStorage.setItem(storageKey('etapas'), JSON.stringify(ETAPAS));
+          mostrarSyncStatus('ok');
+          return;
+        }
+      } else {
+        console.warn('Gist load error:', res.status);
+        mostrarSyncStatus('erro');
+      }
+    } catch(e){
+      console.warn('Gist offline, usando cache local:', e);
+      mostrarSyncStatus('offline');
+    }
+  }
 
-  const contatosSalvos = localStorage.getItem(storageKey('contatos'));
-  const negociosSalvos = localStorage.getItem(storageKey('negocios'));
-  const empresasSalvas = localStorage.getItem(storageKey('empresas'));
+  // fallback: localStorage
+  const contatosSalvos  = localStorage.getItem(storageKey('contatos'));
+  const negociosSalvos  = localStorage.getItem(storageKey('negocios'));
+  const empresasSalvas  = localStorage.getItem(storageKey('empresas'));
+  const ownersSalvos    = localStorage.getItem(storageKey('owners'));
 
   if(contatosSalvos) contatos = JSON.parse(contatosSalvos);
   if(negociosSalvos) negocios = JSON.parse(negociosSalvos);
   if(empresasSalvas){
     const raw = JSON.parse(empresasSalvas);
-    // migração: se ainda for array de strings, converte para objetos
-    empresas = raw.map(e => typeof e === 'string' ? {nome:e, telefone:'', setor:'', site:''} : e);
+    empresas = raw.map(e => typeof e==='string'
+      ? {nome:e,telefone:'',setor:'',site:''} : e);
   }
-
-  const ownersSalvos = localStorage.getItem(storageKey('owners'));
   if(ownersSalvos) owners = JSON.parse(ownersSalvos);
-
   proxC = parseInt(localStorage.getItem(storageKey('proxC'))) || proxC;
   proxN = parseInt(localStorage.getItem(storageKey('proxN'))) || proxN;
+
+  const etapasSalvas = localStorage.getItem(storageKey('etapas'));
+  if(etapasSalvas) ETAPAS = JSON.parse(etapasSalvas);
 }
+
+let _syncTimeout = null;
+function mostrarSyncStatus(tipo){
+  const el = document.getElementById('sync-status');
+  if(!el) return;
+  clearTimeout(_syncTimeout);
+  const cfg = {
+    ok:      { icon:'☁', txt:'Sincronizado',   cor:'#34d399' },
+    erro:    { icon:'⚠', txt:'Erro ao salvar', cor:'#ff6b6b' },
+    offline: { icon:'⚡', txt:'Offline (local)', cor:'#fbbf24' },
+  }[tipo] || {};
+  el.innerHTML = `<span style="color:${cfg.cor};font-size:11px;font-weight:600;display:flex;align-items:center;gap:5px;">${cfg.icon} ${cfg.txt}</span>`;
+  el.style.opacity = '1';
+  _syncTimeout = setTimeout(() => { el.style.opacity = '0'; }, 3000);
+}
+
 
 
 /* ═══════════════ CONSTANTES ═══════════════ */
@@ -2106,7 +2290,7 @@ function switchTab(nome){
   if(nome==='pipeline'){ renderPipeline(); }
   if(nome==='contatos'){ renderContatos(); }
   if(nome==='empresas'){ renderEmpresas(); }
-  if(nome==='configuracoes'){ renderPipelineConfig(); renderOwners(); atualizarSelectOwners(); }
+  if(nome==='configuracoes'){ renderPipelineConfig(); renderOwners(); atualizarSelectOwners(); fecharTelaGist(); }
 }
 
 /* ═══════════════ MODAIS ═══════════════ */
@@ -2643,8 +2827,12 @@ function confirmarImport(){
 
 
 /* INIT */
-window.addEventListener('DOMContentLoaded', () => {
-  carregarDados();
+window.addEventListener('DOMContentLoaded', async () => {
+  if(!gistConfigurado()){
+    mostrarTelaGist();
+  }
+
+  await carregarDados();
   try{
     normalizarEtapas();
     renderPipelineConfig();
