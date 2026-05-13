@@ -444,6 +444,22 @@ tbody tr:hover td{background:rgba(123,47,255,0.07);}
   
 <div class="nav-right">
   <div id="sync-status" style="opacity:0;transition:opacity .5s;"></div>
+  <button id="btn-voz" onclick="abrirModalVoz()" title="Atualizar CRM por voz" style="
+    display:flex;align-items:center;gap:7px;
+    padding:8px 16px;
+    background:linear-gradient(135deg,rgba(0,212,255,0.15),rgba(123,47,255,0.15));
+    border:1px solid rgba(0,212,255,0.35);
+    border-radius:8px;cursor:pointer;
+    font-family:'Plus Jakarta Sans',sans-serif;
+    font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+    color:#00D4FF;
+    transition:all .2s;
+  "
+  onmouseover="this.style.background='linear-gradient(135deg,rgba(0,212,255,0.25),rgba(123,47,255,0.25))'"
+  onmouseout="this.style.background='linear-gradient(135deg,rgba(0,212,255,0.15),rgba(123,47,255,0.15))'">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;flex-shrink:0"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+    Voz IA
+  </button>
   <span class="nav-badge" id="workspace-badge">workspace</span>
   <button class="logout-btn" onclick="logoutCRM()">Sair</button>
 </div>
@@ -1075,8 +1091,9 @@ async function salvarDados(){
   // sincroniza com Gist se configurado
   if(!gistConfigurado()) return;
 
+  const geminiKey = localStorage.getItem('crm_gemini_key') || '';
   const payload = { contatos, negocios, empresas, owners, proxC, proxN,
-                    etapas: ETAPAS, atividades, proxA };
+                    etapas: ETAPAS, atividades, proxA, geminiKey };
   try {
     const res = await fetch(`https://api.github.com/gists/${gistId()}`, {
       method: 'PATCH',
@@ -1125,6 +1142,7 @@ async function carregarDados(){
           if(d.etapas)     ETAPAS     = d.etapas;
           if(d.atividades) atividades = d.atividades;
           if(d.proxA)      proxA      = d.proxA;
+          if(d.geminiKey)  localStorage.setItem('crm_gemini_key', d.geminiKey);
           // espelha no localStorage para uso offline
           localStorage.setItem(storageKey('contatos'), JSON.stringify(contatos));
           localStorage.setItem(storageKey('negocios'), JSON.stringify(negocios));
@@ -1235,14 +1253,15 @@ function atualizarKPIs(){
   const ciclos=negocios.filter(n=>(n.etapa==='ganho'||n.etapa==='perdido')&&n.dataEntrada&&n.dataFechamento).map(n=>diffDias(n.dataEntrada,n.dataFechamento));
   const cicloMedio=ciclos.length?Math.round(ciclos.reduce((a,b)=>a+b,0)/ciclos.length):null;
 
-  document.getElementById('kpi-total').textContent=contatos.length;
-  document.getElementById('kpi-deals').textContent=negocios.length;
-  document.getElementById('kpi-pipeline').textContent=fmtFull(tPipe);
-  document.getElementById('kpi-ganhos').textContent=fmtFull(tGanho);
-  document.getElementById('kpi-perdidos').textContent=fmtFull(tPerd);
-  document.getElementById('kpi-ciclo').textContent=cicloMedio!==null?cicloMedio+' d':'— d';
-  document.getElementById('kpi-conv-qtd').textContent=convQtd+'%';
-  document.getElementById('kpi-conv-val').textContent=convVal+'%';
+  const _kpi = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
+  _kpi('kpi-total', contatos.length);
+  _kpi('kpi-deals', negocios.length);
+  _kpi('kpi-pipeline', fmtFull(tPipe));
+  _kpi('kpi-ganhos', fmtFull(tGanho));
+  _kpi('kpi-perdidos', fmtFull(tPerd));
+  _kpi('kpi-ciclo', cicloMedio!==null?cicloMedio+' d':'— d');
+  _kpi('kpi-conv-qtd', convQtd+'%');
+  _kpi('kpi-conv-val', convVal+'%');
 
   const atvPendentes = atividades.filter(a => !a.done);
   const atvAtrasadas = atvPendentes.filter(a => a.data < new Date().toISOString().slice(0,10));
@@ -2288,6 +2307,8 @@ function switchTab(nome){
   if(nome==='contatos'){ renderContatos(); }
   if(nome==='empresas'){ renderEmpresas(); }
   if(nome==='configuracoes'){ renderPipelineConfig(); renderOwners(); atualizarSelectOwners(); fecharTelaGist(); }
+  // Persiste a aba ativa para restaurar após reload
+  try { localStorage.setItem('crm_aba_ativa', nome); } catch(e){}
 }
 
 /* ═══════════════ MODAIS ═══════════════ */
@@ -3084,13 +3105,9 @@ window.addEventListener('DOMContentLoaded', async () => {
   renderPipeline();
   atualizarKPIs();
 
-  // marca aba inicial ativa no bottom nav
-  const activeTab = document.querySelector('.tab-section.active');
-  if(activeTab){
-    const nome = activeTab.id.replace('sec-','');
-    const btnBot = document.getElementById('bottom-btn-'+nome);
-    if(btnBot) btnBot.classList.add('active');
-  }
+  // Restaura a aba onde o usuário estava antes do reload
+  const abaRestaurada = localStorage.getItem('crm_aba_ativa') || 'pipeline';
+  switchTab(abaRestaurada);
 
   const badge = document.getElementById('workspace-badge');
   if(badge){
@@ -3198,6 +3215,617 @@ function salvarEmpresaEdicao(){
 }
 
 
+</script>
+
+<!-- ══════════ MODAL VOZ IA ══════════ -->
+<div class="modal-overlay" id="modal-voz" onclick="if(event.target===this)fecharModalVoz()" style="z-index:600;">
+  <div class="modal" style="width:560px;max-width:95vw;">
+
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+      <div style="width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,rgba(0,212,255,0.2),rgba(123,47,255,0.2));border:1px solid rgba(0,212,255,0.3);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#00D4FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+      </div>
+      <div>
+        <div style="font-size:16px;font-weight:700;color:var(--white);">Atualizar CRM por Voz</div>
+        <div style="font-size:12px;color:var(--muted-dim);margin-top:2px;">Fale o que aconteceu — a IA atualiza o CRM automaticamente</div>
+      </div>
+    </div>
+
+    <!-- Campo de API Key Gemini -->
+    <div id="voz-apikey-section" style="margin-bottom:16px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <label style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted-dim);">Google Gemini API Key</label>
+        <span id="voz-apikey-status" style="font-size:10px;"></span>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <input id="voz-apikey-input" type="password" placeholder="AIza..." style="flex:1;padding:9px 12px;background:rgba(123,47,255,0.07);border:1px solid var(--border);border-radius:6px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;color:var(--white);outline:none;">
+        <button onclick="salvarApiKey()" style="padding:9px 14px;background:rgba(123,47,255,0.15);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.06em;">Salvar</button>
+      </div>
+      <div style="font-size:10px;color:var(--muted-dim);margin-top:5px;">
+        Gratuito — obtenha em <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--cyan);">aistudio.google.com</a> · Sincroniza via Gist entre dispositivos.
+      </div>
+    </div>
+
+    <div style="height:1px;background:var(--border);margin-bottom:16px;"></div>
+
+    <!-- Área de entrada: texto + microfone lado a lado -->
+    <div style="margin-bottom:16px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--cyan);display:flex;align-items:center;gap:6px;">
+          <span style="width:14px;height:2px;background:var(--cyan);display:block;border-radius:2px;"></span>
+          O que aconteceu?
+        </div>
+        <div style="flex:1;"></div>
+        <!-- Botão microfone compacto -->
+        <button id="voz-mic-btn" onclick="toggleGravacao()" title="Gravar por voz" style="
+          display:flex;align-items:center;gap:6px;
+          padding:6px 12px;border-radius:6px;cursor:pointer;
+          background:rgba(0,212,255,0.08);border:1px solid rgba(0,212,255,0.25);
+          font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;font-weight:700;
+          color:#00D4FF;letter-spacing:.06em;transition:all .2s;
+        ">
+          <svg id="voz-orb-icon" viewBox="0 0 24 24" fill="none" stroke="#00D4FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;flex-shrink:0;">
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+            <line x1="12" y1="19" x2="12" y2="23"/>
+            <line x1="8" y1="23" x2="16" y2="23"/>
+          </svg>
+          <span id="voz-status-text">Gravar</span>
+          <span id="voz-timer" style="font-family:monospace;font-size:10px;"></span>
+        </button>
+      </div>
+      <textarea id="voz-transcricao-texto" style="width:100%;min-height:100px;padding:10px 12px;background:rgba(0,0,0,0.2);border:1px solid var(--border);border-radius:8px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;color:var(--white);outline:none;resize:vertical;line-height:1.6;" placeholder="Digite aqui ou use o botão Gravar para falar…&#10;&#10;Ex: Falei com a Maria da Acme, ela é gerente comercial, interesse no plano Pro, valor de 25 mil, próxima etapa enviar proposta até sexta."></textarea>
+      <div style="font-size:10px;color:var(--muted-dim);margin-top:5px;">Digite, cole ou grave por voz. Revise antes de processar.</div>
+    </div>
+
+    <!-- Seção de transcrição oculta (mantida para compatibilidade do JS) -->
+    <div id="voz-transcricao-section" style="display:none;"></div>
+
+    <!-- Preview das ações -->
+    <div id="voz-acoes-section" style="display:none;margin-bottom:16px;">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--purple-soft);margin-bottom:10px;display:flex;align-items:center;gap:6px;">
+        <span style="width:14px;height:2px;background:var(--purple-soft);display:block;border-radius:2px;"></span>
+        Ações identificadas
+      </div>
+      <div id="voz-acoes-lista" style="display:flex;flex-direction:column;gap:6px;"></div>
+    </div>
+
+    <!-- Loading -->
+    <div id="voz-loading" style="display:none;text-align:center;padding:16px 0;">
+      <div style="display:inline-flex;align-items:center;gap:10px;color:var(--muted-dim);font-size:13px;">
+        <div style="width:16px;height:16px;border:2px solid rgba(0,212,255,0.3);border-top-color:#00D4FF;border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0;"></div>
+        <span id="voz-loading-texto">Processando…</span>
+      </div>
+    </div>
+
+    <div class="modal-actions" style="margin-top:4px;">
+      <button class="btn-cancel" onclick="fecharModalVoz()">Fechar</button>
+      <button id="voz-btn-processar" class="btn-save" onclick="processarVoz()" style="display:none;">
+        Processar com IA
+      </button>
+      <button id="voz-btn-aplicar" class="btn-save" onclick="aplicarAcoes()" style="display:none;background:linear-gradient(135deg,#00D4FF,#7B2FFF);">
+        ✓ Aplicar atualizações
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<style>
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes pulse-orb {
+  0%,100% { box-shadow: 0 0 0 0 rgba(255,60,60,0.4); }
+  50%      { box-shadow: 0 0 0 12px rgba(255,60,60,0); }
+}
+.voz-gravando {
+  background: linear-gradient(135deg,rgba(255,60,60,0.2),rgba(200,0,0,0.15)) !important;
+  border-color: rgba(255,60,60,0.6) !important;
+  animation: pulse-orb 1.2s ease-in-out infinite;
+}
+.acao-item {
+  display:flex;align-items:flex-start;gap:10px;
+  padding:10px 12px;
+  background:rgba(123,47,255,0.07);
+  border:1px solid var(--border);
+  border-left:3px solid var(--cyan);
+  border-radius:8px;font-size:12px;color:var(--muted);line-height:1.5;
+}
+.acao-item .acao-tipo {
+  font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--cyan);background:rgba(0,212,255,0.08);
+  border:1px solid rgba(0,212,255,0.2);
+  border-radius:4px;padding:2px 7px;white-space:nowrap;flex-shrink:0;
+}
+</style>
+
+<script>
+/* ═══════════════════════════════════════════════════
+   MÓDULO VOZ IA — Gemini Flash (gratuito)
+   ═══════════════════════════════════════════════════ */
+
+let vozRecognition = null;
+let vozGravando = false;
+let vozTimerInterval = null;
+let vozSegundos = 0;
+let vozAcoesIdentificadas = [];
+// MediaRecorder fallback
+let vozMediaRecorder = null;
+let vozChunks = [];
+// Stream do microfone reutilizado entre gravações
+let vozMicStream = null;
+
+function abrirModalVoz(){
+  const saved = localStorage.getItem('crm_gemini_key') || '';
+  document.getElementById('voz-apikey-input').value = saved;
+  atualizarStatusApiKey();
+  resetarModalVoz();
+  document.getElementById('modal-voz').classList.add('open');
+  // Mostra botão processar ao digitar diretamente
+  const ta = document.getElementById('voz-transcricao-texto');
+  ta.oninput = () => {
+    const tem = ta.value.trim().length > 0;
+    document.getElementById('voz-btn-processar').style.display = tem ? 'inline-flex' : 'none';
+    document.getElementById('voz-btn-aplicar').style.display = 'none';
+    document.getElementById('voz-acoes-section').style.display = 'none';
+  };
+}
+
+function fecharModalVoz(){
+  if(vozGravando) pararGravacao();
+  document.getElementById('modal-voz').classList.remove('open');
+}
+
+function resetarModalVoz(){
+  vozGravando = false;
+  vozAcoesIdentificadas = [];
+  clearInterval(vozTimerInterval);
+  vozSegundos = 0;
+  vozChunks = [];
+
+  // helper seguro
+  const $  = id => document.getElementById(id);
+  const set = (id, prop, val) => { const el = $(id); if(el) el[prop] = val; };
+
+  setOrbGravando(false);
+  set('voz-timer', 'textContent', '');
+  set('voz-transcricao-texto', 'value', '');
+  set('voz-acoes-lista', 'innerHTML', '');
+
+  const hide = id => { const el = $(id); if(el) el.style.display = 'none'; };
+  hide('voz-transcricao-section');
+  hide('voz-acoes-section');
+  hide('voz-loading');
+  hide('voz-btn-processar');
+  hide('voz-btn-aplicar');
+}
+
+function salvarApiKey(){
+  const val = document.getElementById('voz-apikey-input').value.trim();
+  if(!val){ alert('Cole sua API Key do Google AI Studio.'); return; }
+  localStorage.setItem('crm_gemini_key', val);
+  atualizarStatusApiKey();
+  // Sincroniza via Gist
+  salvarDados();
+}
+
+function atualizarStatusApiKey(){
+  const saved = localStorage.getItem('crm_gemini_key');
+  const el = document.getElementById('voz-apikey-status');
+  if(saved && saved.startsWith('AIza')){
+    el.innerHTML = '<span style="color:#34d399;font-size:10px;">● Configurada</span>';
+  } else if(saved){
+    el.innerHTML = '<span style="color:#fbbf24;font-size:10px;">● Salva</span>';
+  } else {
+    el.innerHTML = '<span style="color:#ff6b6b;font-size:10px;">● Não configurada</span>';
+  }
+}
+
+/* ── GRAVAÇÃO ─────────────────────────────────────── */
+
+function toggleGravacao(){
+  if(vozGravando){ pararGravacao(); } else { iniciarGravacao(); }
+}
+
+async function iniciarGravacao(){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(SR){
+    // Pré-aquece a permissão do microfone uma vez só
+    if(!vozMicStream){
+      try {
+        vozMicStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      } catch(e) {
+        alert('Permissão de microfone negada.');
+        return;
+      }
+    }
+    iniciarSpeechAPI(SR);
+  } else {
+    await iniciarGravacaoAudio();
+  }
+}
+
+function iniciarSpeechAPI(SR){
+  // Reutiliza instância existente — evita pedir permissão a cada gravação
+  if(!vozRecognition){
+    vozRecognition = new SR();
+    vozRecognition.lang = 'pt-BR';
+    vozRecognition.continuous = true;
+    vozRecognition.interimResults = true;
+
+    vozRecognition.onstart = () => {
+      setOrbGravando(true);
+      iniciarTimer();
+    };
+
+    vozRecognition.onresult = (e) => {
+      let final = '', interim = '';
+      for(let i = 0; i < e.results.length; i++){
+        if(e.results[i].isFinal) final += e.results[i][0].transcript + ' ';
+        else interim += e.results[i][0].transcript;
+      }
+      const txt = document.getElementById('voz-transcricao-texto');
+      if(txt) txt.value = final + interim;
+      const sec = document.getElementById('voz-transcricao-section');
+      if(sec) sec.style.display = 'block';
+    };
+
+    vozRecognition.onerror = (e) => {
+      if(e.error === 'not-allowed') alert('Permissão de microfone negada.');
+      if(e.error !== 'aborted') pararGravacao();
+    };
+
+    vozRecognition.onend = () => {
+      // Só reinicia se ainda estiver gravando (evita loop ao parar manualmente)
+      if(vozGravando) {
+        try { vozRecognition.start(); } catch(e){}
+      }
+    };
+  }
+
+  vozGravando = true;
+  vozSegundos = 0;
+  try { vozRecognition.start(); } catch(e){}
+}
+
+async function iniciarGravacaoAudio(){
+  try {
+    if(!vozMicStream){
+      vozMicStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    }
+    const stream = vozMicStream;
+    vozChunks = [];
+    vozMediaRecorder = new MediaRecorder(stream);
+    vozMediaRecorder.ondataavailable = e => { if(e.data.size>0) vozChunks.push(e.data); };
+    vozMediaRecorder.onstop = () => {
+      setOrbGravando(false);
+      // Navegador sem Speech API — campo manual
+      document.getElementById('voz-transcricao-section').style.display = 'block';
+      document.getElementById('voz-transcricao-texto').placeholder = 'Seu navegador não suporta transcrição automática. Digite o texto aqui e clique em Processar.';
+      document.getElementById('voz-status-text').textContent = 'Digite o texto para processar com IA';
+      document.getElementById('voz-status-text').style.color = '#fbbf24';
+      document.getElementById('voz-btn-processar').style.display = 'inline-flex';
+    };
+    vozMediaRecorder.start(100);
+    vozGravando = true;
+    vozSegundos = 0;
+    setOrbGravando(true);
+    iniciarTimer();
+  } catch(e){
+    alert('Não foi possível acessar o microfone.');
+  }
+}
+
+function pararGravacao(){
+  vozGravando = false;
+  clearInterval(vozTimerInterval);
+
+  if(vozRecognition){
+    try { vozRecognition.stop(); } catch(e){}
+    // NÃO anula vozRecognition — reutilizamos na próxima gravação
+  }
+  if(vozMediaRecorder && vozMediaRecorder.state !== 'inactive'){
+    vozMediaRecorder.stop();
+    return;
+  }
+
+  setOrbGravando(false);
+  const el = document.getElementById('voz-transcricao-texto');
+  const texto = el ? el.value.trim() : '';
+  if(texto){
+    document.getElementById('voz-status-text').textContent = 'Pronto — revise e clique em Processar';
+    document.getElementById('voz-status-text').style.color = '#34d399';
+    document.getElementById('voz-btn-processar').style.display = 'inline-flex';
+  }
+}
+
+function setOrbGravando(on){
+  const btn = document.getElementById('voz-mic-btn');
+  const icon = document.getElementById('voz-orb-icon');
+  const statusEl = document.getElementById('voz-status-text');
+  if(on){
+    if(btn){ btn.style.background='rgba(255,60,60,0.15)'; btn.style.borderColor='rgba(255,60,60,0.5)'; }
+    if(icon){ icon.setAttribute('stroke','#ff6b6b'); icon.innerHTML=`<rect x="6" y="6" width="12" height="12" rx="2" fill="rgba(255,60,60,0.4)" stroke="#ff6b6b" stroke-width="2"/>`; }
+    if(statusEl){ statusEl.textContent='Parar'; statusEl.style.color='#ff6b6b'; }
+  } else {
+    if(btn){ btn.style.background='rgba(0,212,255,0.08)'; btn.style.borderColor='rgba(0,212,255,0.25)'; }
+    if(icon){ icon.setAttribute('stroke','#00D4FF'); icon.innerHTML=`<path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/>`; }
+    if(statusEl){ statusEl.textContent='Gravar'; statusEl.style.color='#00D4FF'; }
+  }
+}
+
+function iniciarTimer(){
+  vozTimerInterval = setInterval(() => {
+    vozSegundos++;
+    const m = String(Math.floor(vozSegundos/60)).padStart(2,'0');
+    const s = String(vozSegundos%60).padStart(2,'0');
+    document.getElementById('voz-timer').textContent = `${m}:${s}`;
+  }, 1000);
+}
+
+/* ── PROCESSAR COM GEMINI ─────────────────────────── */
+
+async function processarVoz(){
+  const texto = document.getElementById('voz-transcricao-texto').value.trim();
+  if(!texto){ alert('Transcrição vazia. Grave um áudio ou digite o texto.'); return; }
+
+  const apiKey = localStorage.getItem('crm_gemini_key');
+  if(!apiKey){ alert('Configure sua Google Gemini API Key.'); return; }
+
+  mostrarLoading('Analisando com Gemini…');
+  document.getElementById('voz-btn-processar').style.display = 'none';
+
+  try {
+    const contexto = gerarContextoCRM();
+    const acoes = await extrairAcoesGemini(texto, contexto, apiKey);
+    esconderLoading();
+    vozAcoesIdentificadas = acoes;
+    renderizarAcoes(acoes);
+    if(acoes.length > 0){
+      document.getElementById('voz-btn-aplicar').style.display = 'inline-flex';
+    } else {
+      document.getElementById('voz-btn-processar').style.display = 'inline-flex';
+    }
+  } catch(e){
+    esconderLoading();
+    console.error(e);
+    alert('Erro ao processar: ' + e.message);
+    document.getElementById('voz-btn-processar').style.display = 'inline-flex';
+  }
+}
+
+function gerarContextoCRM(){
+  return {
+    etapas: ETAPAS.map(e => e.chave),
+    empresas: empresas.map(e => e.nome).slice(0,50),
+    contatos: contatos.map(c => ({ id:c.id, nome:c.nome, empresa:c.empresa||'' })).slice(0,50),
+    negocios: negocios.filter(n => n.etapa!=='perdido').map(n => ({ id:n.id, titulo:n.titulo, empresa:n.empresa||'', etapa:n.etapa })).slice(0,50),
+    owners: owners,
+    hoje: new Date().toISOString().slice(0,10),
+  };
+}
+
+async function extrairAcoesGemini(texto, ctx, apiKey){
+  const etapas = ctx.etapas.join(', ');
+  const empresasStr = ctx.empresas.join(', ') || '(nenhuma)';
+  const contatosStr = ctx.contatos.map(c => `${c.nome} (${c.empresa}, id:${c.id})`).join('; ') || '(nenhum)';
+  const negociosStr = ctx.negocios.map(n => `"${n.titulo}" – ${n.empresa} – ${n.etapa} (id:${n.id})`).join('; ') || '(nenhum)';
+  const ownersStr = ctx.owners.join(', ') || '(nenhum)';
+
+  const prompt = `Você é o motor de IA de um CRM comercial. Analise o relato do vendedor e retorne APENAS um JSON válido com as ações a executar.
+
+ESTADO ATUAL DO CRM:
+- Etapas: ${etapas}
+- Empresas: ${empresasStr}
+- Contatos: ${contatosStr}
+- Negócios ativos: ${negociosStr}
+- Vendedores: ${ownersStr}
+- Hoje: ${ctx.hoje}
+
+TIPOS DE AÇÃO (use exatamente estes nomes):
+- criar_empresa: { tipo, nome, setor?, telefone?, site? }
+- criar_contato: { tipo, nome, empresa?, cargo?, telefone?, email?, status? }
+- atualizar_contato: { tipo, id, campos_a_atualizar }
+- criar_negocio: { tipo, titulo, empresa?, owner?, valor?, etapa?, dataEntrada? }
+- atualizar_negocio: { tipo, id, campos_a_atualizar }
+- adicionar_nota: { tipo, negocio_id, texto }
+- criar_atividade: { tipo, titulo, tipoAtv (follow-up|proposta|email|reuniao|outro), data, negocio_id?, obs? }
+
+REGRAS:
+- Retorne SOMENTE o JSON, sem markdown, sem texto extra.
+- Formato: {"acoes": [...]}
+- Para datas use YYYY-MM-DD. Valores monetários só o número.
+- Se empresa/negócio já existe, use o id existente para atualizar (não crie duplicata).
+- Se empresa nova, crie primeiro antes do contato/negócio.
+
+RELATO DO VENDEDOR:
+${texto}`;
+
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.1, maxOutputTokens: 2048 }
+      })
+    }
+  );
+
+  if(!res.ok){
+    const err = await res.json();
+    throw new Error(err.error?.message || `Erro ${res.status}`);
+  }
+
+  const data = await res.json();
+  const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '{"acoes":[]}';
+  const clean = raw.replace(/```json|```/g,'').trim();
+  const parsed = JSON.parse(clean);
+  return parsed.acoes || [];
+}
+
+/* ── RENDERIZAR AÇÕES ────────────────────────────── */
+
+function renderizarAcoes(acoes){
+  const lista = document.getElementById('voz-acoes-lista');
+  document.getElementById('voz-acoes-section').style.display = 'block';
+
+  if(!acoes.length){
+    lista.innerHTML = `<div style="font-size:12px;color:var(--muted-dim);padding:12px;text-align:center;">Nenhuma ação identificada. Tente reformular o texto.</div>`;
+    return;
+  }
+
+  const labels = {
+    criar_empresa:    { label:'Nova empresa',       cor:'#34d399' },
+    criar_contato:    { label:'Novo contato',        cor:'#00D4FF' },
+    atualizar_contato:{ label:'Atualizar contato',   cor:'#fbbf24' },
+    criar_negocio:    { label:'Novo negócio',        cor:'#9B59FF' },
+    atualizar_negocio:{ label:'Atualizar negócio',   cor:'#fbbf24' },
+    adicionar_nota:   { label:'Nota no negócio',     cor:'#00D4FF' },
+    criar_atividade:  { label:'Nova atividade',      cor:'#34d399' },
+  };
+
+  lista.innerHTML = acoes.map(a => {
+    const cfg = labels[a.tipo] || { label:a.tipo, cor:'var(--muted-dim)' };
+    return `<div class="acao-item" style="border-left-color:${cfg.cor}">
+      <span class="acao-tipo" style="color:${cfg.cor};background:${cfg.cor}18;border-color:${cfg.cor}33;">${cfg.label}</span>
+      <span>${descreverAcao(a)}</span>
+    </div>`;
+  }).join('');
+}
+
+function descreverAcao(a){
+  switch(a.tipo){
+    case 'criar_empresa':
+      return `<strong>${a.nome}</strong>${a.setor?' · '+a.setor:''}${a.telefone?' · '+a.telefone:''}`;
+    case 'criar_contato':
+      return `<strong>${a.nome}</strong>${a.cargo?' ('+a.cargo+')':''}${a.empresa?' — '+a.empresa:''}${a.telefone?' · '+a.telefone:''}`;
+    case 'atualizar_contato':
+      return `Contato id:${a.id} → ${JSON.stringify(a.campos_a_atualizar)}`;
+    case 'criar_negocio':
+      return `<strong>${a.titulo}</strong>${a.empresa?' — '+a.empresa:''}${a.valor?' · R$'+Number(a.valor).toLocaleString('pt-BR'):''}${a.etapa?' · '+a.etapa:''}`;
+    case 'atualizar_negocio': {
+      const neg = negocios.find(n => n.id===a.id);
+      const nome = neg ? neg.titulo : 'id:'+a.id;
+      const parts = Object.entries(a.campos_a_atualizar||{}).map(([k,v])=>`${k}: ${v}`).join(', ');
+      return `<strong>${nome}</strong> → ${parts}`;
+    }
+    case 'adicionar_nota': {
+      const neg = negocios.find(n => n.id===a.negocio_id);
+      return `Em <strong>${neg?neg.titulo:'negócio id:'+a.negocio_id}</strong>: "${a.texto}"`;
+    }
+    case 'criar_atividade':
+      return `<strong>${a.titulo}</strong> · ${a.tipoAtv||'outro'} · ${a.data||'sem data'}${a.obs?' — '+a.obs:''}`;
+    default:
+      return JSON.stringify(a);
+  }
+}
+
+/* ── APLICAR AÇÕES ───────────────────────────────── */
+
+function aplicarAcoes(){
+  if(!vozAcoesIdentificadas.length) return;
+
+  let aplicadas = 0;
+  const erros = [];
+
+  vozAcoesIdentificadas.forEach(a => {
+    try {
+      switch(a.tipo){
+        case 'criar_empresa': {
+          if(a.nome && !empresas.some(e => e.nome.toLowerCase()===a.nome.toLowerCase())){
+            empresas.push({ nome:a.nome, setor:a.setor||'', telefone:a.telefone||'', site:a.site||'' });
+            empresas.sort((x,y) => x.nome.localeCompare(y.nome));
+          }
+          aplicadas++; break;
+        }
+        case 'criar_contato': {
+          if(!a.nome) break;
+          const jaExiste = contatos.some(c =>
+            c.nome.toLowerCase()===a.nome.toLowerCase() &&
+            (c.empresa||'').toLowerCase()===(a.empresa||'').toLowerCase()
+          );
+          if(!jaExiste){
+            garantirEmpresa(a.empresa);
+            contatos.push({ id:proxC++, nome:a.nome, empresa:a.empresa||'', cargo:a.cargo||'', status:a.status||'lead', telefone:a.telefone||'', email:a.email||'', info:'' });
+          }
+          aplicadas++; break;
+        }
+        case 'atualizar_contato': {
+          const idx = contatos.findIndex(c => c.id===a.id);
+          if(idx!==-1 && a.campos_a_atualizar) Object.assign(contatos[idx], a.campos_a_atualizar);
+          aplicadas++; break;
+        }
+        case 'criar_negocio': {
+          if(!a.titulo) break;
+          garantirEmpresa(a.empresa);
+          const etapa = ETAPAS.some(e=>e.chave===a.etapa) ? a.etapa : 'lead';
+          const dataEntrada = a.dataEntrada || new Date().toISOString().slice(0,10);
+          negocios.push({ id:proxN++, titulo:a.titulo, empresa:a.empresa||'', owner:a.owner||'', valor:parseFloat(a.valor)||0, valorFechado:null, etapa, dataEntrada, dataFechamento:null, motivo:'', notas:[], atividades:[], historico:{ lead:dataEntrada, qualificacao:null, negociacao:null, ganho:null, perdido:null } });
+          aplicadas++; break;
+        }
+        case 'atualizar_negocio': {
+          const neg = negocios.find(n => n.id===a.id);
+          if(neg && a.campos_a_atualizar){
+            const c = a.campos_a_atualizar;
+            if(c.etapa && !ETAPAS.some(e=>e.chave===c.etapa)) delete c.etapa;
+            if(c.empresa) garantirEmpresa(c.empresa);
+            if(c.etapa && c.etapa!==neg.etapa){
+              if(!neg.historico) neg.historico={};
+              neg.historico[c.etapa] = new Date().toISOString().slice(0,10);
+            }
+            Object.assign(neg, c);
+          }
+          aplicadas++; break;
+        }
+        case 'adicionar_nota': {
+          const neg = negocios.find(n => n.id===a.negocio_id);
+          if(neg && a.texto){
+            if(!neg.notas) neg.notas=[];
+            const maxId = neg.notas.length ? Math.max(...neg.notas.map(n=>n.id)) : 0;
+            neg.notas.push({ id:maxId+1, texto:a.texto, data:new Date().toISOString().slice(0,10) });
+          }
+          aplicadas++; break;
+        }
+        case 'criar_atividade': {
+          if(!a.titulo||!a.data) break;
+          atividades.push({ id:proxA++, titulo:a.titulo, data:a.data, tipo:a.tipoAtv||'outro', obs:a.obs||'', negocioId:a.negocio_id||null, contatoId:null, done:false, criadaEm:new Date().toISOString().slice(0,10) });
+          aplicadas++; break;
+        }
+      }
+    } catch(e){ erros.push(a.tipo+': '+e.message); }
+  });
+
+  sincronizarStatusRelacionados();
+  salvarDados();
+  atualizarSelectEmpresas();
+  atualizarSelectOwners();
+  renderContatos(); renderEmpresas(); renderPipeline(); atualizarKPIs();
+  if(document.getElementById('sec-atividades').classList.contains('active')) renderAtividades();
+  if(document.getElementById('sec-dashboard').classList.contains('active')) renderDashboard();
+
+  fecharModalVoz();
+  if(erros.length) alert(`✓ ${aplicadas} ação(ões) aplicada(s).\n⚠ Erros:\n${erros.join('\n')}`);
+  else mostrarSyncStatus('ok');
+}
+
+function garantirEmpresa(nome){
+  if(nome && !empresas.some(e => e.nome===nome)){
+    empresas.push({ nome, setor:'', telefone:'', site:'' });
+    empresas.sort((x,y) => x.nome.localeCompare(y.nome));
+  }
+}
+
+function mostrarLoading(txt){
+  document.getElementById('voz-loading-texto').textContent = txt;
+  document.getElementById('voz-loading').style.display = 'block';
+  document.getElementById('voz-btn-processar').style.display = 'none';
+  document.getElementById('voz-btn-aplicar').style.display = 'none';
+}
+
+function esconderLoading(){
+  document.getElementById('voz-loading').style.display = 'none';
+}
 </script>
 
 <!-- MODAL IMPORTAÇÃO -->
