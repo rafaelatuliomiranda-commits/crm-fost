@@ -294,6 +294,47 @@ tbody tr:hover td{background:rgba(123,47,255,.06);}
     </div>
     <div class="lerr" id="lerr"></div>
     <button class="lbtn" id="lbtn" onclick="fazerLogin()">Entrar</button>
+    <div style="text-align:center;margin-top:14px">
+      <button onclick="mostrarReset()" style="background:none;border:none;color:rgba(255,255,255,.4);font-size:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Esqueci minha senha</button>
+    </div>
+  </div>
+</div>
+
+<!-- RESET DE SENHA -->
+<div id="reset-screen" style="display:none;position:fixed;inset:0;z-index:9999;background:linear-gradient(135deg,#06006e,#12005a);align-items:center;justify-content:center">
+  <div class="lbox">
+    <div class="llogo">fost</div>
+    <div class="lsub" id="reset-sub">Digite seu e-mail para receber o link de redefinição.</div>
+    <div class="lf" id="reset-form">
+      <label>E-mail</label>
+      <input id="reset-email" type="email" placeholder="voce@empresa.com.br" autocomplete="email">
+    </div>
+    <div class="lerr" id="reset-err"></div>
+    <button class="lbtn" id="reset-btn" onclick="enviarReset()">Enviar link</button>
+    <div style="text-align:center;margin-top:14px">
+      <button onclick="voltarLogin()" style="background:none;border:none;color:rgba(255,255,255,.4);font-size:12px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">← Voltar ao login</button>
+    </div>
+  </div>
+</div>
+
+<!-- TROCAR SENHA (primeiro acesso ou perfil) -->
+<div id="trocar-senha-screen" style="display:none;position:fixed;inset:0;z-index:9999;background:linear-gradient(135deg,#06006e,#12005a);align-items:center;justify-content:center">
+  <div class="lbox">
+    <div class="llogo">fost</div>
+    <div class="lsub">Defina sua nova senha.</div>
+    <div class="lf">
+      <label>Nova senha</label>
+      <div style="position:relative;margin-bottom:14px">
+        <input id="nova-senha" type="password" placeholder="Mínimo 6 caracteres" style="margin-bottom:0;padding-right:42px">
+        <button type="button" onclick="toggleSenhaCampo('nova-senha','eye2')" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:rgba(255,255,255,.4);padding:4px">
+          <svg id="eye2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;display:block"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+      </div>
+      <label>Confirmar senha</label>
+      <input id="confirmar-senha" type="password" placeholder="Repita a senha" style="margin-bottom:14px">
+    </div>
+    <div class="lerr" id="trocar-err"></div>
+    <button class="lbtn" id="trocar-btn" onclick="salvarNovaSenha()">Salvar senha</button>
   </div>
 </div>
 
@@ -470,6 +511,49 @@ tbody tr:hover td{background:rgba(123,47,255,.06);}
 
     <!-- Config da empresa -->
     <div>
+      <!-- Minha conta -->
+      <div class="config-card" style="margin-bottom:14px">
+        <div class="config-card-title">Minha conta</div>
+        <div class="toggle-row">
+          <span class="stat-name">Nome</span>
+          <span class="stat-val" id="cfg-user-nome" style="font-size:13px;color:var(--white)">—</span>
+        </div>
+        <div class="toggle-row">
+          <span class="stat-name">E-mail</span>
+          <span class="stat-val" id="cfg-user-email" style="font-size:13px;color:var(--muted)">—</span>
+        </div>
+        <div class="toggle-row" style="border-bottom:none">
+          <span class="stat-name">Senha</span>
+          <button class="btn-sec" onclick="abrirTrocarSenhaApp()" style="font-size:11px;padding:5px 12px">Alterar senha</button>
+        </div>
+      </div>
+
+      <!-- Usuários da empresa -->
+      <div class="config-card" id="card-usuarios" style="margin-bottom:14px;display:none">
+        <div class="config-card-title">Usuários <span style="color:var(--dim);font-weight:400;font-size:10px;margin-left:4px" id="cfg-usuarios-count">(0/3)</span></div>
+        <div id="cfg-usuarios-list" style="margin-bottom:14px"></div>
+        <div id="cfg-novo-usuario-form">
+          <div class="modal-sep" style="margin:0 0 14px"></div>
+          <div class="modal-sec" style="margin-bottom:10px">Convidar usuário</div>
+          <div class="field-row" style="margin-bottom:8px">
+            <div class="field" style="margin-bottom:0"><label>Nome *</label><input id="nu-nome" placeholder="Nome do vendedor"></div>
+            <div class="field" style="margin-bottom:0"><label>E-mail *</label><input id="nu-email" type="email" placeholder="vendedor@empresa.com.br"></div>
+          </div>
+          <div class="field" style="margin-bottom:10px">
+            <label>Senha provisória *</label>
+            <div style="display:flex;gap:8px">
+              <input id="nu-senha" type="text" placeholder="Ex: Acesso@2024" style="flex:1">
+              <button class="btn-sec" onclick="gerarSenhaUsuario()" style="white-space:nowrap">Auto</button>
+            </div>
+          </div>
+          <div id="nu-resultado" style="display:none;margin-bottom:10px;padding:12px;background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.25);border-radius:8px;font-size:12px;line-height:1.8"></div>
+          <button class="btn-add" id="nu-btn" onclick="criarUsuario()">+ Adicionar usuário</button>
+        </div>
+        <div id="cfg-usuarios-limite" style="display:none;font-size:12px;color:var(--dim);margin-top:8px">
+          Limite de 3 usuários por empresa atingido.
+        </div>
+      </div>
+
       <div class="config-card" style="margin-bottom:14px">
         <div class="config-card-title">Configurações da empresa</div>
         <div class="toggle-row">
@@ -626,15 +710,25 @@ tbody tr:hover td{background:rgba(123,47,255,.06);}
 
 <!-- MODAL NOVA EMPRESA (super_admin) -->
 <div class="modal-overlay" id="modal-empresa" onclick="if(event.target===this)fecharModal('empresa')">
-  <div class="modal" style="width:460px">
+  <div class="modal" style="width:500px">
     <div class="modal-title">Novo cliente</div>
     <div class="field"><label>Nome da empresa *</label><input id="emp-nome" placeholder="Ex: Costa Moda"></div>
-    <div class="field"><label>E-mail do admin</label><input id="emp-email" type="email" placeholder="dono@empresa.com.br"></div>
-    <div class="field"><label>Senha provisória</label><input id="emp-senha" type="text" placeholder="Será enviada ao cliente"></div>
-    <div class="field"><label>Nome do admin</label><input id="emp-admin-nome" placeholder="Nome do responsável"></div>
+    <div class="modal-sep"></div>
+    <div class="modal-sec">Usuário administrador</div>
+    <div class="field-row">
+      <div class="field"><label>Nome *</label><input id="emp-admin-nome" placeholder="Nome do responsável"></div>
+      <div class="field"><label>E-mail *</label><input id="emp-email" type="email" placeholder="dono@empresa.com.br"></div>
+    </div>
+    <div class="field"><label>Senha provisória *</label>
+      <div style="position:relative">
+        <input id="emp-senha" type="text" placeholder="Ex: Acesso@2024" style="padding-right:42px">
+        <button type="button" onclick="gerarSenha()" title="Gerar senha aleatória" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:rgba(123,47,255,.2);border:1px solid var(--border);border-radius:5px;cursor:pointer;color:var(--cyan);font-size:10px;font-weight:700;padding:3px 7px">Auto</button>
+      </div>
+    </div>
+    <div id="emp-resultado" style="display:none;margin-top:12px;padding:14px;background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.25);border-radius:8px;font-size:12px;line-height:1.8"></div>
     <div class="modal-actions">
-      <button class="btn-cancel" onclick="fecharModal('empresa')">Cancelar</button>
-      <button class="btn-save" onclick="criarEmpresa()">Criar cliente</button>
+      <button class="btn-cancel" id="emp-btn-cancel" onclick="fecharModal('empresa')">Cancelar</button>
+      <button class="btn-save" id="emp-btn-save" onclick="criarEmpresa()">Criar cliente</button>
     </div>
   </div>
 </div>
@@ -672,6 +766,9 @@ const fR   = v => v != null ? 'R$ '+Number(v).toLocaleString('pt-BR',{maximumFra
 // AUTH
 // ═══════════════════════════════════════════════════════
 async function iniciar() {
+  // Verificar se é redirecionamento de reset de senha
+  const isReset = await verificarRedirectReset();
+  if (isReset) return;
   const { data:{session} } = await sb.auth.getSession();
   if (session) await posLogin(session.user);
 }
@@ -775,6 +872,18 @@ async function carregarTudo() {
   // Toggle vendedor_ve_todos
   if (empresaAtual) {
     document.getElementById('cfg-vendedor-ve-todos').checked = !!empresaAtual.vendedor_ve_todos;
+  }
+  // Preencher dados do usuário logado
+  if (perfil) {
+    const elNome  = document.getElementById('cfg-user-nome');
+    const elEmail = document.getElementById('cfg-user-email');
+    if (elNome)  elNome.textContent  = perfil.nome  || '—';
+    if (elEmail) elEmail.textContent = usuarioAtual?.email || '—';
+  }
+  // Carregar card de usuários (só admin e super_admin)
+  if (perfil?.papel === 'admin' || perfil?.papel === 'super_admin') {
+    document.getElementById('card-usuarios').style.display = '';
+    await carregarUsuariosEmpresa();
   }
 }
 
@@ -1211,6 +1320,11 @@ function atualizarFiltroEtapas() {
 }
 
 async function abrirModalNegocio(id) {
+  // Verificar limite só ao criar novo
+  if (!id) {
+    const ok = await verificarLimiteNegocios();
+    if (!ok) return;
+  }
   document.getElementById('mn-titulo').textContent = id ? 'Editar negócio' : 'Novo negócio';
   document.getElementById('n-id').value = id || '';
   document.getElementById('n-btn-del').style.display = id ? '' : 'none';
@@ -1700,39 +1814,54 @@ function abrirModalNovaEmpresa() {
 }
 
 async function criarEmpresa() {
-  const nome       = document.getElementById('emp-nome').value.trim();
-  const email      = document.getElementById('emp-email').value.trim();
-  const senha      = document.getElementById('emp-senha').value.trim();
-  const adminNome  = document.getElementById('emp-admin-nome').value.trim();
-  if (!nome) return alert('Preencha o nome da empresa.');
+  const nome      = document.getElementById('emp-nome').value.trim();
+  const email     = document.getElementById('emp-email').value.trim();
+  const senha     = document.getElementById('emp-senha').value.trim();
+  const adminNome = document.getElementById('emp-admin-nome').value.trim();
+  const resultado = document.getElementById('emp-resultado');
+  const btnSave   = document.getElementById('emp-btn-save');
+  const btnCancel = document.getElementById('emp-btn-cancel');
 
-  // Criar empresa
-  const { data: emp, error: errEmp } = await sb.from('empresas').insert({ nome, vendedor_ve_todos:true }).select().single();
-  if (errEmp) return alert('Erro ao criar empresa: '+errEmp.message);
+  if (!nome || !email || !senha || !adminNome) return alert('Preencha todos os campos.');
 
-  // Criar etapas padrão
+  btnSave.disabled = true; btnSave.textContent = 'Criando…';
+  resultado.style.display = 'none';
+
+  // 1. Criar empresa
+  const { data: emp, error: errEmp } = await sb.from('empresas')
+    .insert({ nome, vendedor_ve_todos:true }).select().single();
+  if (errEmp) { btnSave.disabled=false; btnSave.textContent='Criar cliente'; return alert('Erro: '+errEmp.message); }
+
+  // 2. Criar etapas padrão
   await sb.from('etapas').insert([
-    { empresa_id:emp.id, nome:'Lead',         ordem:1, cor:'#00D4FF', alerta_dias:7  },
-    { empresa_id:emp.id, nome:'Qualificação', ordem:2, cor:'#FBBF24', alerta_dias:14 },
-    { empresa_id:emp.id, nome:'Negociação',   ordem:3, cor:'#9B59FF', alerta_dias:21 },
-    { empresa_id:emp.id, nome:'Ganho',        ordem:4, cor:'#34D399', alerta_dias:null },
-    { empresa_id:emp.id, nome:'Perdido',      ordem:5, cor:'#FF6B6B', alerta_dias:null },
+    { empresa_id:emp.id, nome:'Lead',         ordem:1, cor:'#00D4FF', alerta_dias:7   },
+    { empresa_id:emp.id, nome:'Qualificação', ordem:2, cor:'#FBBF24', alerta_dias:14  },
+    { empresa_id:emp.id, nome:'Negociação',   ordem:3, cor:'#9B59FF', alerta_dias:21  },
+    { empresa_id:emp.id, nome:'Ganho',        ordem:4, cor:'#34D399', alerta_dias:null},
+    { empresa_id:emp.id, nome:'Perdido',      ordem:5, cor:'#FF6B6B', alerta_dias:null},
   ]);
 
-  // Criar usuário admin (se e-mail e senha fornecidos)
-  if (email && senha) {
-    const { data: usr, error: errUsr } = await sb.auth.admin?.createUser
-      ? await sb.auth.admin.createUser({ email, password:senha, email_confirm:true })
-      : { data:null, error:{message:'API admin não disponível no cliente'} };
+  // 3. Criar usuário via signUp (funciona sem permissão de admin)
+  const { data: usr, error: errUsr } = await sb.auth.signUp({
+    email, password: senha,
+    options: { data: { nome: adminNome } }
+  });
 
-    if (!errUsr && usr?.user) {
-      await sb.from('perfis').insert({ id:usr.user.id, nome:adminNome||email, papel:'admin', empresa_id:emp.id });
-    } else {
-      alert(`Empresa criada! Para criar o usuário admin, use o painel do Supabase > Authentication > Add user\nE-mail: ${email}\nEmpresa ID: ${emp.id}`);
-    }
+  if (!errUsr && usr?.user) {
+    // Criar perfil vinculado à empresa
+    await sb.from('perfis').insert({ id:usr.user.id, nome:adminNome, papel:'admin', empresa_id:emp.id });
   }
 
-  fecharModal('empresa');
+  // 4. Mostrar resultado com credenciais
+  btnSave.style.display = 'none';
+  btnCancel.textContent = 'Fechar';
+  resultado.style.display = 'block';
+  resultado.innerHTML = '<strong style="color:var(--green)">✓ Cliente criado com sucesso!</strong><br><br>'
+    + '<strong>Empresa:</strong> '+nome+'<br>'
+    + '<strong>Login:</strong> '+email+'<br>'
+    + '<strong>Senha provisória:</strong> <code style="background:rgba(0,0,0,.2);padding:2px 6px;border-radius:3px">'+senha+'</code><br><br>'
+    + '<span style="color:var(--dim);font-size:11px">Envie essas credenciais para o cliente. Ele pode trocar a senha depois do primeiro acesso.</span>';
+
   await mostrarSeletorClientes();
 }
 
@@ -2164,8 +2293,250 @@ function toggleSenha() {
   }
 }
 
+
+// ═══════════════════════════════════════════════════════
+// RESET DE SENHA
+// ═══════════════════════════════════════════════════════
+function mostrarReset() {
+  document.getElementById('login-screen').style.display = 'none';
+  var s = document.getElementById('reset-screen');
+  s.style.display = 'flex';
+}
+
+function voltarLogin() {
+  document.getElementById('reset-screen').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+}
+
+async function enviarReset() {
+  var email = (document.getElementById('reset-email').value || '').trim();
+  var err   = document.getElementById('reset-err');
+  var btn   = document.getElementById('reset-btn');
+  var sub   = document.getElementById('reset-sub');
+  if (!email) { err.textContent = 'Digite seu e-mail.'; err.style.display = 'block'; return; }
+  err.style.display = 'none';
+  btn.disabled = true; btn.textContent = 'Enviando…';
+  const { error } = await sb.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin + '?reset=1'
+  });
+  btn.disabled = false; btn.textContent = 'Enviar link';
+  if (error) {
+    err.textContent = 'Erro: ' + error.message;
+    err.style.display = 'block';
+  } else {
+    document.getElementById('reset-form').style.display = 'none';
+    sub.textContent = '✓ Link enviado para ' + email + '. Verifique sua caixa de entrada.';
+    sub.style.color = 'var(--green)';
+    btn.style.display = 'none';
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// TROCA DE SENHA
+// ═══════════════════════════════════════════════════════
+function toggleSenhaCampo(inputId, iconId) {
+  var input = document.getElementById(inputId);
+  var icon  = document.getElementById(iconId);
+  if (!input || !icon) return;
+  if (input.type === 'password') {
+    input.type = 'text';
+    icon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>';
+  } else {
+    input.type = 'password';
+    icon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+  }
+}
+
+function mostrarTrocarSenha() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('trocar-senha-screen').style.display = 'flex';
+}
+
+async function salvarNovaSenha() {
+  var nova      = document.getElementById('nova-senha').value;
+  var confirmar = document.getElementById('confirmar-senha').value;
+  var err       = document.getElementById('trocar-err');
+  var btn       = document.getElementById('trocar-btn');
+  err.style.display = 'none';
+  if (nova.length < 6) { err.textContent = 'A senha deve ter pelo menos 6 caracteres.'; err.style.display = 'block'; return; }
+  if (nova !== confirmar) { err.textContent = 'As senhas não coincidem.'; err.style.display = 'block'; return; }
+  btn.disabled = true; btn.textContent = 'Salvando…';
+  const { error } = await sb.auth.updateUser({ password: nova });
+  if (error) {
+    err.textContent = 'Erro: ' + error.message;
+    err.style.display = 'block';
+    btn.disabled = false; btn.textContent = 'Salvar senha';
+  } else {
+    document.getElementById('trocar-senha-screen').style.display = 'none';
+    // Recarregar sessão e entrar no app
+    const { data: { session } } = await sb.auth.getSession();
+    if (session) await posLogin(session.user);
+  }
+}
+
+// Detectar redirecionamento de reset ao carregar a página
+async function verificarRedirectReset() {
+  const hash = window.location.hash;
+  if (hash.includes('type=recovery') || window.location.search.includes('reset=1')) {
+    const { data: { session } } = await sb.auth.getSession();
+    if (session) {
+      mostrarTrocarSenha();
+      return true;
+    }
+  }
+  return false;
+}
+
+// ═══════════════════════════════════════════════════════
+// TROCA DE SENHA PELO PERFIL (dentro do app)
+// ═══════════════════════════════════════════════════════
+function abrirTrocarSenhaApp() {
+  document.getElementById('ts-nova').value = '';
+  document.getElementById('ts-confirmar').value = '';
+  document.getElementById('ts-err').style.display = 'none';
+  document.getElementById('modal-trocar-senha').classList.add('open');
+}
+
+async function salvarSenhaApp() {
+  var nova      = document.getElementById('ts-nova').value;
+  var confirmar = document.getElementById('ts-confirmar').value;
+  var err       = document.getElementById('ts-err');
+  var btn       = document.getElementById('ts-btn');
+  err.style.display = 'none';
+  if (nova.length < 6) { err.textContent = 'Mínimo 6 caracteres.'; err.style.display = 'block'; return; }
+  if (nova !== confirmar) { err.textContent = 'As senhas não coincidem.'; err.style.display = 'block'; return; }
+  btn.disabled = true; btn.textContent = 'Salvando…';
+  const { error } = await sb.auth.updateUser({ password: nova });
+  btn.disabled = false; btn.textContent = 'Salvar';
+  if (error) { err.textContent = 'Erro: ' + error.message; err.style.display = 'block'; }
+  else { fecharModal('trocar-senha'); alert('Senha alterada com sucesso!'); }
+}
+
+// ═══════════════════════════════════════════════════════
+// CRIAR EMPRESA MELHORADA
+// ═══════════════════════════════════════════════════════
+function gerarSenha() {
+  var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789@#!';
+  var senha = '';
+  for (var i = 0; i < 10; i++) senha += chars[Math.floor(Math.random() * chars.length)];
+  document.getElementById('emp-senha').value = senha;
+}
+
+// ═══════════════════════════════════════════════════════
+// GESTÃO DE USUÁRIOS DA EMPRESA
+// ═══════════════════════════════════════════════════════
+const LIMITE_USUARIOS  = 3;  // 1 admin + 2 vendedores
+const LIMITE_NEGOCIOS  = 1000;
+
+let usuariosEmpresa = [];
+
+async function carregarUsuariosEmpresa() {
+  const { data } = await sb.from('perfis')
+    .select('id, nome, papel, criado_em')
+    .eq('empresa_id', empresaAtual.id)
+    .order('criado_em');
+  usuariosEmpresa = data || [];
+  renderUsuariosEmpresa();
+}
+
+function renderUsuariosEmpresa() {
+  const lista    = document.getElementById('cfg-usuarios-list');
+  const count    = document.getElementById('cfg-usuarios-count');
+  const form     = document.getElementById('cfg-novo-usuario-form');
+  const limite   = document.getElementById('cfg-usuarios-limite');
+  const atingido = usuariosEmpresa.length >= LIMITE_USUARIOS;
+
+  count.textContent = '(' + usuariosEmpresa.length + '/' + LIMITE_USUARIOS + ')';
+  form.style.display   = atingido ? 'none' : '';
+  limite.style.display = atingido ? '' : 'none';
+
+  lista.innerHTML = usuariosEmpresa.map(u => {
+    const isMe = u.id === perfil?.id;
+    return '<div class="config-row" style="gap:10px">'
+      + '<div style="flex:1">'
+      + '<div style="font-size:13px;color:var(--white);font-weight:600">' + u.nome + (isMe ? ' <span style="font-size:10px;color:var(--cyan)">(você)</span>' : '') + '</div>'
+      + '<div style="font-size:11px;color:var(--dim)">' + (u.papel === 'admin' ? 'Administrador' : 'Vendedor') + '</div>'
+      + '</div>'
+      + (!isMe && perfil?.papel === 'admin' ? '<button class="icon-btn danger" onclick="removerUsuario(\'' + u.id + '\')" title="Remover acesso"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>' : '')
+      + '</div>';
+  }).join('') || '<div style="font-size:12px;color:var(--dim)">Nenhum usuário.</div>';
+}
+
+function gerarSenhaUsuario() {
+  var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789@#!';
+  var s = '';
+  for (var i=0;i<10;i++) s += chars[Math.floor(Math.random()*chars.length)];
+  document.getElementById('nu-senha').value = s;
+}
+
+async function criarUsuario() {
+  if (usuariosEmpresa.length >= LIMITE_USUARIOS) return alert('Limite de ' + LIMITE_USUARIOS + ' usuários atingido.');
+  const nome  = document.getElementById('nu-nome').value.trim();
+  const email = document.getElementById('nu-email').value.trim();
+  const senha = document.getElementById('nu-senha').value.trim();
+  if (!nome || !email || !senha) return alert('Preencha nome, e-mail e senha.');
+
+  const btn = document.getElementById('nu-btn');
+  btn.disabled = true; btn.textContent = 'Criando…';
+
+  const { data: usr, error } = await sb.auth.signUp({ email, password: senha });
+  if (error) {
+    btn.disabled = false; btn.textContent = '+ Adicionar usuário';
+    return alert('Erro: ' + error.message);
+  }
+  if (usr?.user) {
+    await sb.from('perfis').insert({ id: usr.user.id, nome, papel: 'vendedor', empresa_id: empresaAtual.id });
+  }
+
+  // Mostrar credenciais
+  const res = document.getElementById('nu-resultado');
+  res.style.display = '';
+  res.innerHTML = '<strong style="color:var(--green)">✓ Usuário criado!</strong><br>'
+    + '<strong>Login:</strong> ' + email + '<br>'
+    + '<strong>Senha:</strong> <code style="background:rgba(0,0,0,.2);padding:2px 6px;border-radius:3px">' + senha + '</code><br>'
+    + '<span style="color:var(--dim);font-size:11px">Envie essas credenciais para o vendedor.</span>';
+
+  document.getElementById('nu-nome').value  = '';
+  document.getElementById('nu-email').value = '';
+  document.getElementById('nu-senha').value = '';
+  btn.disabled = false; btn.textContent = '+ Adicionar usuário';
+
+  await carregarUsuariosEmpresa();
+}
+
+async function removerUsuario(id) {
+  if (!confirm('Remover acesso deste usuário?')) return;
+  await sb.from('perfis').delete().eq('id', id).eq('empresa_id', empresaAtual.id);
+  await carregarUsuariosEmpresa();
+}
+
+// ═══════════════════════════════════════════════════════
+// LIMITE DE NEGÓCIOS
+// ═══════════════════════════════════════════════════════
+async function verificarLimiteNegocios() {
+  if (negocios.length >= LIMITE_NEGOCIOS) {
+    alert('Limite de ' + LIMITE_NEGOCIOS + ' negócios por empresa atingido. Entre em contato com a fost para ampliar seu plano.');
+    return false;
+  }
+  return true;
+}
+
 // Iniciar
 iniciar();
 </script>
+
+<!-- MODAL TROCAR SENHA (dentro do app) -->
+<div class="modal-overlay" id="modal-trocar-senha" onclick="if(event.target===this)fecharModal('trocar-senha')">
+  <div class="modal" style="width:420px">
+    <div class="modal-title">Alterar senha</div>
+    <div class="field"><label>Nova senha *</label><input id="ts-nova" type="password" placeholder="Mínimo 6 caracteres"></div>
+    <div class="field"><label>Confirmar senha *</label><input id="ts-confirmar" type="password" placeholder="Repita a senha"></div>
+    <div class="lerr" id="ts-err" style="margin-bottom:8px"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="fecharModal('trocar-senha')">Cancelar</button>
+      <button class="btn-save" id="ts-btn" onclick="salvarSenhaApp()">Salvar</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
