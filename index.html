@@ -129,7 +129,7 @@ tbody tr:hover td{background:rgba(123,47,255,.06);}
 .view-btn.active{background:rgba(123,47,255,.3);color:var(--white);}
 
 /* MODAL */
-.modal-overlay{display:none;position:fixed;inset:0;z-index:500;background:rgba(6,0,80,.82);backdrop-filter:blur(8px);align-items:center;justify-content:center;}
+.modal-overlay{display:none;position:fixed;inset:0;z-index:10000;background:rgba(6,0,80,.82);backdrop-filter:blur(8px);align-items:center;justify-content:center;}
 .modal-overlay.open{display:flex;}
 .modal{background:#07005a;border:1px solid var(--bordm);border-radius:12px;padding:26px;width:640px;max-width:96vw;max-height:92vh;overflow-y:auto;box-shadow:0 32px 80px rgba(0,0,10,.65);}
 .modal-title{font-family:'Bricolage Grotesque',sans-serif;font-size:20px;font-weight:800;margin-bottom:22px;background:linear-gradient(135deg,var(--white),var(--muted));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
@@ -342,7 +342,12 @@ tbody tr:hover td{background:rgba(123,47,255,.06);}
       <label>E-mail</label>
       <input id="le" type="email" placeholder="voce@empresa.com.br" autocomplete="email">
       <label>Senha</label>
-      <input id="ls" type="password" placeholder="••••••••" autocomplete="current-password">
+      <div style="position:relative">
+        <input id="ls" type="password" placeholder="••••••••" autocomplete="current-password" style="padding-right:42px">
+        <button type="button" onclick="toggleSenha()" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:rgba(255,255,255,.4);padding:4px">
+          <svg id="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;display:block"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+      </div>
     </div>
     <div class="lerr" id="lerr"></div>
     <button class="lbtn" id="lbtn" onclick="fazerLogin()">Entrar</button>
