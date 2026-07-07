@@ -198,6 +198,58 @@ tbody tr:hover td{background:rgba(123,47,255,.06);}
 /* CONFIGURAÇÕES */
 .config-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
 .config-card{background:var(--cbg);border:1px solid var(--border);border-radius:10px;padding:22px;}
+
+/* INÍCIO (Home / Radar) */
+.home-hero{background:var(--cbg);border:1px solid var(--border);border-radius:14px;padding:28px 30px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap;}
+.home-hero-text{font-family:'Bricolage Grotesque',sans-serif;font-size:21px;font-weight:800;color:var(--white);line-height:1.4;max-width:720px;}
+.home-hero-sub{font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:500;color:var(--dim);margin-top:8px;line-height:1.5;}
+.home-selo{display:inline-flex;align-items:center;gap:8px;padding:9px 18px;border-radius:30px;font-size:12px;font-weight:700;letter-spacing:.04em;white-space:nowrap;}
+.home-selo.saudavel{background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.35);color:var(--green);}
+.home-selo.atencao{background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.35);color:var(--yellow);}
+.home-selo.critico{background:rgba(255,107,107,.1);border:1px solid rgba(255,107,107,.35);color:var(--danger);}
+
+.home-kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;background:var(--border);border-radius:10px;overflow:hidden;margin-bottom:20px;}
+.home-kpi-card{background:var(--cbg);padding:18px 16px;}
+.home-kpi-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:8px;}
+.home-kpi-value{font-family:'Bricolage Grotesque',sans-serif;font-size:24px;font-weight:800;line-height:1;background:linear-gradient(135deg,var(--cyan),var(--ps));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:6px;}
+.home-kpi-value.red{background:none;-webkit-text-fill-color:var(--danger);color:var(--danger);}
+.home-kpi-interp{font-size:11px;color:var(--dim);line-height:1.5;}
+
+.home-section-title{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin:26px 0 12px;display:flex;align-items:center;gap:8px;}
+.home-section-title::before{content:'';width:14px;height:2px;background:linear-gradient(to right,var(--cyan),var(--purple));display:block;}
+
+.alerta-card{display:flex;align-items:flex-start;gap:14px;background:var(--cbg);border:1px solid var(--border);border-left:3px solid var(--border-l,var(--purple));border-radius:10px;padding:16px 18px;margin-bottom:10px;}
+.alerta-card.p-critico{border-left-color:var(--danger);}
+.alerta-card.p-atencao{border-left-color:var(--yellow);}
+.alerta-card.p-ok{border-left-color:var(--green);}
+.alerta-icone{font-size:18px;line-height:1;margin-top:1px;}
+.alerta-corpo{flex:1;}
+.alerta-desc{font-size:14px;color:var(--white);font-weight:600;line-height:1.4;margin-bottom:3px;}
+.alerta-impacto{font-size:12px;color:var(--dim);}
+.alerta-acao{flex-shrink:0;}
+
+.oport-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-bottom:6px;}
+.oport-card{background:rgba(52,211,153,.05);border:1px solid rgba(52,211,153,.22);border-radius:10px;padding:16px;font-size:13px;color:var(--muted);line-height:1.5;}
+.oport-card::before{content:'💡';margin-right:6px;}
+
+.diag-card{background:var(--cbg);border:1px solid var(--border);border-radius:14px;padding:26px 28px;margin-bottom:6px;}
+.diag-title{font-family:'Bricolage Grotesque',sans-serif;font-size:17px;font-weight:800;color:var(--white);margin-bottom:20px;}
+.diag-grid{display:grid;grid-template-columns:1fr 1fr 1.2fr;gap:26px;}
+.diag-col-label{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:12px;}
+.diag-col-label.melhorou{color:var(--green);}
+.diag-col-label.piorou{color:var(--danger);}
+.diag-col-label.recom{color:var(--cyan);}
+.diag-item{font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:9px;padding-left:16px;position:relative;}
+.diag-item::before{content:'—';position:absolute;left:0;color:var(--dim);}
+
+.home-ativ-item{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--cbg);border:1px solid var(--border);border-radius:8px;padding:11px 14px;margin-bottom:7px;}
+.home-ativ-quando{font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--cyan);background:rgba(0,212,255,.08);border-radius:4px;padding:2px 7px;margin-right:10px;}
+.home-ativ-tt{font-size:13px;color:var(--white);font-weight:600;}
+.home-ativ-neg{font-size:11px;color:var(--dim);}
+
+.home-quick{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;}
+
+.home-empty{text-align:center;padding:30px 20px;color:var(--dim);font-size:13px;background:var(--cbg);border:1px solid var(--border);border-radius:10px;}
 .config-card-title{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:16px;display:flex;align-items:center;gap:8px;}
 .config-card-title::before{content:'';width:14px;height:2px;background:linear-gradient(to right,var(--cyan),var(--purple));display:block;}
 .config-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;background:rgba(123,47,255,.06);border:1px solid var(--border);border-radius:6px;padding:9px 11px;}
@@ -353,9 +405,10 @@ tbody tr:hover td{background:rgba(123,47,255,.06);}
     <span class="nav-cliente" id="nav-cliente-nome" onclick="voltarSeletor()" style="display:none"></span>
   </div>
   <div class="nav-tabs">
-    <button class="nav-tab active" onclick="switchTab('dashboard')" id="tab-btn-dashboard">Dashboard</button>
+    <button class="nav-tab active" onclick="switchTab('inicio')" id="tab-btn-inicio">Início</button>
     <button class="nav-tab" onclick="switchTab('pipeline')" id="tab-btn-pipeline">Pipeline</button>
     <button class="nav-tab" onclick="switchTab('atividades')" id="tab-btn-atividades">Atividades</button>
+    <button class="nav-tab" onclick="switchTab('dashboard')" id="tab-btn-dashboard">Resultados</button>
     <button class="nav-tab" onclick="switchTab('config')" id="tab-btn-config">Configurações</button>
   </div>
   <div class="nav-right">
@@ -365,8 +418,80 @@ tbody tr:hover td{background:rgba(123,47,255,.06);}
 </nav>
 <main>
 
-<!-- DASHBOARD -->
-<div class="tab-section active" id="sec-dashboard">
+<!-- INÍCIO (Radar — painel de decisão) -->
+<div class="tab-section active" id="sec-inicio">
+
+  <!-- 1. Saudação -->
+  <div class="home-hero">
+    <div>
+      <div class="home-hero-text" id="home-saudacao">Bom dia. Carregando seu diagnóstico do dia…</div>
+      <div class="home-hero-sub" id="home-saudacao-sub"></div>
+    </div>
+    <div class="home-selo saudavel" id="home-selo">🟢 Saudável</div>
+  </div>
+
+  <!-- 2. Resumo executivo -->
+  <div class="home-kpi-row">
+    <div class="home-kpi-card">
+      <div class="home-kpi-label">Receita prevista</div>
+      <div class="home-kpi-value" id="home-kpi-receita">—</div>
+      <div class="home-kpi-interp" id="home-kpi-receita-sub">—</div>
+    </div>
+    <div class="home-kpi-card">
+      <div class="home-kpi-label">Negócios em risco</div>
+      <div class="home-kpi-value red" id="home-kpi-risco">—</div>
+      <div class="home-kpi-interp" id="home-kpi-risco-sub">—</div>
+    </div>
+    <div class="home-kpi-card">
+      <div class="home-kpi-label">Follow-ups atrasados</div>
+      <div class="home-kpi-value red" id="home-kpi-atrasos">—</div>
+      <div class="home-kpi-interp" id="home-kpi-atrasos-sub">—</div>
+    </div>
+  </div>
+
+  <!-- 3. Alertas prioritários -->
+  <div class="home-section-title">Alertas prioritários</div>
+  <div id="home-alertas"></div>
+
+  <!-- 4. Onde existe oportunidade -->
+  <div class="home-section-title">Onde existe oportunidade</div>
+  <div class="oport-grid" id="home-oportunidades"></div>
+
+  <!-- 5. Diagnóstico comercial -->
+  <div class="home-section-title">Diagnóstico comercial</div>
+  <div class="diag-card">
+    <div class="diag-title">O que aconteceu no seu comercial este mês</div>
+    <div class="diag-grid">
+      <div>
+        <div class="diag-col-label melhorou">O que melhorou</div>
+        <div id="diag-melhorou"></div>
+      </div>
+      <div>
+        <div class="diag-col-label piorou">O que piorou</div>
+        <div id="diag-piorou"></div>
+      </div>
+      <div>
+        <div class="diag-col-label recom">Recomendações do mês</div>
+        <div id="diag-recom"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. Próximas atividades -->
+  <div class="home-section-title">Próximas atividades</div>
+  <div id="home-atividades"></div>
+
+  <!-- 7. Ações rápidas -->
+  <div class="home-section-title">Ações rápidas</div>
+  <div class="home-quick">
+    <button class="btn-add" onclick="abrirModalNegocio()">+ Novo negócio</button>
+    <button class="btn-sec" onclick="switchTab('atividades')">+ Nova atividade</button>
+    <button class="btn-sec" onclick="switchTab('pipeline')">Abrir pipeline</button>
+  </div>
+</div>
+
+<!-- RESULTADOS (ex-Dashboard) -->
+<div class="tab-section" id="sec-dashboard">
   <!-- KPIs — só aparecem no dashboard -->
   <div class="kpi-row">
     <div class="kpi-card"><div class="kpi-label">Negócios</div><div class="kpi-value" id="kpi-neg">—</div></div>
@@ -416,12 +541,12 @@ tbody tr:hover td{background:rgba(123,47,255,.06);}
         <button class="view-btn" id="vbtn-tabela" onclick="setView('tabela')">Relatório</button>
       </div>
     </div>
-    <input class="tsearch" type="text" id="pipe-busca" placeholder="Buscar negócio…" oninput="renderView()" style="min-width:160px;flex:1">
-    <select class="tselect" id="pipe-filtro-estagnado" onchange="renderView()">
+    <input class="tsearch" type="text" id="pipe-busca" placeholder="Buscar negócio…" oninput="filtroPipeSemResponsavel=false;renderView()" style="min-width:160px;flex:1">
+    <select class="tselect" id="pipe-filtro-estagnado" onchange="filtroPipeSemResponsavel=false;renderView()">
       <option value="">Todos os negócios</option>
       <option value="estagnado">⚠ Estagnados além do limite</option>
     </select>
-    <select class="tselect" id="pipe-filtro-etapa" onchange="renderView()">
+    <select class="tselect" id="pipe-filtro-etapa" onchange="filtroPipeSemResponsavel=false;renderView()">
       <option value="">Todas as etapas</option>
     </select>
     <select class="tselect" id="pipe-ordem" onchange="renderView()">
@@ -432,6 +557,7 @@ tbody tr:hover td{background:rgba(123,47,255,.06);}
     </select>
     <button class="btn-add" onclick="abrirModalNegocio()">+ Negócio</button>
   </div>
+  <div id="pipe-filtro-status" style="display:none;margin-bottom:12px"></div>
   <div id="view-kanban">
     <div id="kanban-filtros-custom" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px"></div>
     <div class="pipeline-scroll-wrap"><div class="pipeline" id="pipeline-kanban"></div></div>
@@ -502,7 +628,7 @@ tbody tr:hover td{background:rgba(123,47,255,.06);}
             </select>
           </div>
           <div id="novo-campo-opcoes-wrap" style="display:none">
-            <input id="novo-campo-opcoes" class="tsearch" style="width:100%" placeholder="Opções separadas por vírgula (ex: Alta, Média, Baixa)">
+            <input id="novo-campo-opcoes" class="tsearch" style="width:100%" placeholder="Opções separadas por vírgula (máx. 10, ex: Alta, Média, Baixa)">
           </div>
           <button class="btn-add" onclick="adicionarCampo()">+ Campo</button>
         </div>
@@ -521,6 +647,10 @@ tbody tr:hover td{background:rgba(123,47,255,.06);}
         <div class="toggle-row">
           <span class="stat-name">E-mail</span>
           <span class="stat-val" id="cfg-user-email" style="font-size:13px;color:var(--muted)">—</span>
+        </div>
+        <div class="toggle-row">
+          <span class="stat-name">Negócios da empresa</span>
+          <span class="stat-val" id="cfg-neg-count" style="font-size:13px;color:var(--muted)">0 / 500</span>
         </div>
         <div class="toggle-row" style="border-bottom:none">
           <span class="stat-name">Senha</span>
@@ -741,10 +871,22 @@ const SUPA_URL = 'https://nfgrtghuccadiuocacim.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5mZ3J0Z2h1Y2NhZGl1b2NhY2ltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzNDE5MTksImV4cCI6MjA5ODkxNzkxOX0.x4RLocqZPRRcYhiAvMiy0xLzvx6FffAqVk-_u2y8CUg';
 const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
 
+// Limites do plano (cliente fost)
+const LIMITE_USUARIOS  = 3;   // 1 admin + 2 vendedores
+const LIMITE_NEGOCIOS  = 500; // por empresa cliente fost
+const LIMITE_CAMPOS    = 10;  // campos personalizados por empresa
+const LIMITE_OPCOES    = 10;  // opções por campo do tipo seleção
+
+// Sobe este número sempre que a estrutura/lógica do diagnóstico da Home mudar.
+// Isso invalida automaticamente qualquer cache salvo com uma versão antiga
+// em diagnostico_diario, sem depender de apagar linhas manualmente no Supabase.
+const DIAG_VERSION = 2;
+
 // ═══════════════════════════════════════════════════════
 // ESTADO
 // ═══════════════════════════════════════════════════════
 let perfil       = null; // perfil do usuário logado
+let usuarioAtual = null; // objeto de auth do usuário logado (contém e-mail)
 let empresaAtual = null; // empresa sendo visualizada
 let etapas       = [];
 let camposCustom = [];
@@ -791,6 +933,7 @@ async function fazerLogin() {
 }
 
 async function posLogin(user) {
+  usuarioAtual = user;
   const { data } = await sb.from('perfis').select('*').eq('id', user.id).single();
   perfil = data;
   document.getElementById('nav-user').textContent = perfil?.nome || user.email;
@@ -854,37 +997,79 @@ async function abrirApp() {
 }
 
 async function carregarTudo() {
-  await Promise.all([
-    carregarEtapas(),
-    carregarCampos(),
-    carregarNegocios(),
-    carregarAtividades(),
-  ]);
-  atualizarSelectEtapas();
-  atualizarFiltroEtapas();
-  renderView();
-  renderAtividades();
-  renderCalendario();
-  renderDashboard();
-  atualizarKPIs();
-  renderConfigEtapas();
-  renderConfigCampos();
-  // Toggle vendedor_ve_todos
-  if (empresaAtual) {
-    document.getElementById('cfg-vendedor-ve-todos').checked = !!empresaAtual.vendedor_ve_todos;
+  // ── Bloco crítico de Configurações: cada parte roda isolada em seu
+  // próprio try/catch, para que um erro em qualquer uma delas nunca
+  // impeça as outras (em especial o card de usuários) de aparecer.
+  try {
+    if (perfil) {
+      const elNome  = document.getElementById('cfg-user-nome');
+      const elEmail = document.getElementById('cfg-user-email');
+      if (elNome)  elNome.textContent  = perfil.nome  || '—';
+      if (elEmail) elEmail.textContent = usuarioAtual?.email || '—';
+    }
+  } catch (e) {
+    console.error('Erro ao preencher dados do usuário:', e);
   }
-  // Preencher dados do usuário logado
-  if (perfil) {
-    const elNome  = document.getElementById('cfg-user-nome');
-    const elEmail = document.getElementById('cfg-user-email');
-    if (elNome)  elNome.textContent  = perfil.nome  || '—';
-    if (elEmail) elEmail.textContent = usuarioAtual?.email || '—';
+
+  try {
+    // Card de usuários (só admin e super_admin) — sempre visível para esses papéis
+    if (perfil?.papel === 'admin' || perfil?.papel === 'super_admin') {
+      document.getElementById('card-usuarios').style.display = '';
+      await carregarUsuariosEmpresa();
+    }
+  } catch (e) {
+    console.error('Erro ao carregar card de usuários:', e);
   }
-  // Carregar card de usuários (só admin e super_admin)
-  if (perfil?.papel === 'admin' || perfil?.papel === 'super_admin') {
-    document.getElementById('card-usuarios').style.display = '';
-    await carregarUsuariosEmpresa();
+
+  try {
+    // Toggle vendedor_ve_todos
+    if (empresaAtual) {
+      const elToggle = document.getElementById('cfg-vendedor-ve-todos');
+      if (elToggle) elToggle.checked = !!empresaAtual.vendedor_ve_todos;
+    }
+  } catch (e) {
+    console.error('Erro ao preparar toggle da empresa:', e);
   }
+
+  try {
+    await Promise.all([
+      carregarEtapas(),
+      carregarCampos(),
+      carregarNegocios(),
+      carregarAtividades(),
+    ]);
+    atualizarSelectEtapas();
+    atualizarFiltroEtapas();
+    renderView();
+    renderAtividades();
+    renderCalendario();
+    renderDashboard();
+    atualizarKPIs();
+    renderConfigEtapas();
+    renderConfigCampos();
+  } catch (e) {
+    console.error('Erro ao carregar dados do CRM:', e);
+  }
+
+  // Contador de negócios (limite do plano) — sempre atualizado por último,
+  // depois que negocios[] já foi carregado.
+  atualizarContadorNegocios();
+
+  // Início (Radar) — depende de negocios/etapas/atividades já carregados acima
+  try {
+    await carregarInicio();
+  } catch (e) {
+    console.error('Erro ao montar a Home:', e);
+  }
+}
+
+function atualizarContadorNegocios() {
+  const el = document.getElementById('cfg-neg-count');
+  if (!el) return;
+  const total = negocios.length;
+  const atingido = total >= LIMITE_NEGOCIOS;
+  el.textContent = total + ' / ' + LIMITE_NEGOCIOS;
+  el.style.color = atingido ? 'var(--red, #f87171)' : 'var(--muted)';
 }
 
 async function carregarEtapas() {
@@ -1069,6 +1254,8 @@ function setView(v) {
   renderView();
 }
 
+let filtroPipeSemResponsavel = false;
+
 function negociosFiltrados() {
   const busca      = document.getElementById('pipe-busca').value.toLowerCase();
   const fEtapa     = document.getElementById('pipe-filtro-etapa').value;
@@ -1079,6 +1266,7 @@ function negociosFiltrados() {
   let lista = [...negocios].filter(n => {
     if (busca && !n.titulo.toLowerCase().includes(busca) && !(n.contato_nome||'').toLowerCase().includes(busca) && !(n.contato_empresa||'').toLowerCase().includes(busca)) return false;
     if (fEtapa && n.etapa_id !== fEtapa) return false;
+    if (filtroPipeSemResponsavel && n.owner_id) return false;
     // Filtro estagnados: só negócios em etapas com alerta configurado e além do limite
     if (fEstagnado === 'estagnado') {
       const etapa = etapas.find(e=>e.id===n.etapa_id);
@@ -1101,6 +1289,14 @@ function negociosFiltrados() {
 }
 
 function renderView() {
+  const status = document.getElementById('pipe-filtro-status');
+  if (filtroPipeSemResponsavel) {
+    status.style.display = '';
+    status.innerHTML = `<button class="btn-sec" style="color:var(--yellow);border-color:rgba(251,191,36,.3)" onclick="filtroPipeSemResponsavel=false;renderView()">⚠ Mostrando só negócios sem responsável — ✕ Limpar filtro</button>`;
+  } else {
+    status.style.display = 'none';
+    status.innerHTML = '';
+  }
   if (viewAtual==='kanban') renderKanban();
   else renderTabela();
 }
@@ -1695,7 +1891,7 @@ function renderConfigCampos() {
       ${tags}
     </div>`;
   }).join('') || '<div style="font-size:12px;color:var(--dim);margin-bottom:8px">Nenhum campo.</div>';
-  document.getElementById('config-campo-form').style.display = camposCustom.length >= 10 ? 'none' : '';
+  document.getElementById('config-campo-form').style.display = camposCustom.length >= LIMITE_CAMPOS ? 'none' : '';
 }
 
 async function editarCampoNome(id, valor) {
@@ -1712,6 +1908,9 @@ async function adicionarOpcao(id) {
   if (!nova) return;
   const campo = camposCustom.find(c => c.id === id);
   if (!campo) return;
+  if ((campo.opcoes || []).length >= LIMITE_OPCOES) {
+    return alert('Máximo de ' + LIMITE_OPCOES + ' opções por campo atingido.');
+  }
   const opcoes = [...(campo.opcoes || []), nova];
   await sb.from('campos_custom').update({ opcoes }).eq('id', id);
   input.value = '';
@@ -1733,12 +1932,16 @@ document.getElementById('novo-campo-tipo').addEventListener('change', function()
 });
 
 async function adicionarCampo() {
-  if (camposCustom.length >= 10) return alert('Máximo de 10 campos atingido.');
+  if (camposCustom.length >= LIMITE_CAMPOS) return alert('Máximo de ' + LIMITE_CAMPOS + ' campos atingido.');
   const nome = document.getElementById('novo-campo-nome').value.trim();
   if (!nome) return alert('Preencha o nome do campo.');
   const tipo = document.getElementById('novo-campo-tipo').value;
   const opcoesStr = document.getElementById('novo-campo-opcoes').value;
-  const opcoes = tipo==='selecao' ? opcoesStr.split(',').map(o=>o.trim()).filter(Boolean) : null;
+  let opcoes = tipo==='selecao' ? opcoesStr.split(',').map(o=>o.trim()).filter(Boolean) : null;
+  if (opcoes && opcoes.length > LIMITE_OPCOES) {
+    opcoes = opcoes.slice(0, LIMITE_OPCOES);
+    alert('Máximo de ' + LIMITE_OPCOES + ' opções por campo. Apenas as primeiras ' + LIMITE_OPCOES + ' foram salvas.');
+  }
   await sb.from('campos_custom').insert({ empresa_id:empresaAtual.id, nome, tipo, opcoes, ordem:camposCustom.length+1 });
   document.getElementById('novo-campo-nome').value='';
   document.getElementById('novo-campo-opcoes').value='';
@@ -2425,9 +2628,6 @@ function gerarSenha() {
 // ═══════════════════════════════════════════════════════
 // GESTÃO DE USUÁRIOS DA EMPRESA
 // ═══════════════════════════════════════════════════════
-const LIMITE_USUARIOS  = 3;  // 1 admin + 2 vendedores
-const LIMITE_NEGOCIOS  = 1000;
-
 let usuariosEmpresa = [];
 
 async function carregarUsuariosEmpresa() {
@@ -2521,8 +2721,379 @@ async function verificarLimiteNegocios() {
   return true;
 }
 
+// ═══════════════════════════════════════════════════════
+// INÍCIO (Radar) — painel de decisão diário
+// ═══════════════════════════════════════════════════════
+// Filosofia: a Home fixa um "retrato do dia" na primeira visita e não
+// recalcula até o dia seguinte, para não parecer instável durante o dia
+// (ex: o usuário resolve um alerta às 14h e ele não deve "desaparecer"
+// magicamente — o retrato de hoje já foi tirado às 9h).
+
+function limitesEtapas() {
+  const etapasOrd  = [...etapas].sort((a,b)=>a.ordem-b.ordem);
+  const idsGanho   = etapasOrd.slice(-2,-1).map(e=>e.id);
+  const idsPerdido = etapasOrd.slice(-1).map(e=>e.id);
+  const idsFinal   = [...idsGanho, ...idsPerdido];
+  return { etapasOrd, idsGanho, idsPerdido, idsFinal };
+}
+
+function negociosEstagnados(lista) {
+  const agora = new Date();
+  const { idsFinal } = limitesEtapas();
+  return lista.filter(n => {
+    if (idsFinal.includes(n.etapa_id)) return false;
+    const etapa = etapas.find(e=>e.id===n.etapa_id);
+    if (!etapa?.alerta_dias) return false;
+    const dtUlt = n.ultima_atualizacao ? new Date(n.ultima_atualizacao) : (n.data_entrada ? new Date(n.data_entrada) : null);
+    if (!dtUlt) return false;
+    const dias = Math.floor((agora - dtUlt)/86400000);
+    return dias >= etapa.alerta_dias;
+  });
+}
+
+function atividadesAtrasadas(lista) {
+  const hojeIni = new Date(); hojeIni.setHours(0,0,0,0);
+  return lista.filter(a => !a.concluida && a.data && new Date(a.data) < hojeIni);
+}
+
+function negociosNoPeriodo(lista, dataIni, dataFim) {
+  return lista.filter(n => n.data_entrada && n.data_entrada >= dataIni && n.data_entrada <= dataFim);
+}
+
+function fechadosNoPeriodo(lista, dataIni, dataFim) {
+  return lista.filter(n => n.data_fechamento && n.data_fechamento >= dataIni && n.data_fechamento <= dataFim);
+}
+
+function calcularConversao(fechados, idsGanho, idsPerdido) {
+  const ganhos   = fechados.filter(n=>idsGanho.includes(n.etapa_id));
+  const perdidos = fechados.filter(n=>idsPerdido.includes(n.etapa_id));
+  const total = ganhos.length + perdidos.length;
+  return { ganhos, perdidos, conv: total>0 ? Math.round(ganhos.length/total*100) : null };
+}
+
+function mesAtualRange() {
+  const d = new Date();
+  const ini = new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0,10);
+  const fim = new Date(d.getFullYear(), d.getMonth()+1, 0).toISOString().slice(0,10);
+  return [ini, fim];
+}
+function mesAnteriorRange() {
+  const d = new Date();
+  const ini = new Date(d.getFullYear(), d.getMonth()-1, 1).toISOString().slice(0,10);
+  const fim = new Date(d.getFullYear(), d.getMonth(), 0).toISOString().slice(0,10);
+  return [ini, fim];
+}
+
+// ── Motor principal: monta o diagnóstico do dia a partir dos dados já carregados
+function montarDiagnostico() {
+  const { etapasOrd, idsGanho, idsPerdido, idsFinal } = limitesEtapas();
+  const abertos = negocios.filter(n => !idsFinal.includes(n.etapa_id));
+  const estagnados = negociosEstagnados(negocios);
+  const pendentes = atividades.filter(a=>!a.concluida);
+  const atrasadas = atividadesAtrasadas(atividades);
+
+  // ── Score de saúde (0-100, quanto maior pior) ────────────────────────
+  const pctEstagnados = abertos.length ? estagnados.length/abertos.length : 0;
+  const scoreEstagnacao = Math.min(100, (pctEstagnados/0.5)*100);
+
+  const pctAtrasadas = pendentes.length ? atrasadas.length/pendentes.length : 0;
+  const scoreAtraso = Math.min(100, (pctAtrasadas/0.6)*100);
+
+  const etapasAbertasIds = etapasOrd.slice(0,-2).map(e=>e.id);
+  const contagemPorEtapa = etapasAbertasIds.map(id => abertos.filter(n=>n.etapa_id===id).length);
+  const maxContagem = contagemPorEtapa.length ? Math.max(...contagemPorEtapa) : 0;
+  const pctConcentracao = abertos.length ? maxContagem/abertos.length : 0;
+  const scoreConcentracao = Math.min(100, (pctConcentracao/0.75)*100);
+
+  const scoreFinal = Math.round(0.40*scoreEstagnacao + 0.35*scoreAtraso + 0.25*scoreConcentracao);
+  const nivel = scoreFinal <= 30 ? 'saudavel' : (scoreFinal <= 60 ? 'atencao' : 'critico');
+
+  // ── KPIs do resumo executivo ──────────────────────────────────────────
+  const [mIni, mFim]   = mesAtualRange();
+  const [maIni, maFim] = mesAnteriorRange();
+  const fechAtual  = fechadosNoPeriodo(negocios, mIni, mFim);
+  const fechAnt    = fechadosNoPeriodo(negocios, maIni, maFim);
+  const { ganhos: ganhosAtual,   conv: convAtual } = calcularConversao(fechAtual, idsGanho, idsPerdido);
+  const { ganhos: ganhosAnt,     conv: convAnt }   = calcularConversao(fechAnt,   idsGanho, idsPerdido);
+
+  const receitaPrevista = abertos.reduce((s,n)=>s+(n.valor||0),0);
+  const receitaGanhaAtual = ganhosAtual.reduce((s,n)=>s+(n.valor_fechado||n.valor||0),0);
+  const receitaGanhaAnt   = ganhosAnt.reduce((s,n)=>s+(n.valor_fechado||n.valor||0),0);
+  const cresceReceita = receitaGanhaAnt>0 ? Math.round(((receitaGanhaAtual-receitaGanhaAnt)/receitaGanhaAnt)*100) : null;
+
+  const valorEstagnados = estagnados.reduce((s,n)=>s+(n.valor||0),0);
+
+  const kpis = {
+    receitaPrevista, cresceReceita,
+    convAtual, convAnt,
+    riscoQtd: estagnados.length, riscoValor: valorEstagnados,
+    atrasosQtd: atrasadas.length,
+  };
+
+  // ── Alertas prioritários (ações, não números soltos) ─────────────────
+  const alertas = [];
+  if (estagnados.length > 0) {
+    alertas.push({
+      prioridade: 'critico', icone: '🔴',
+      desc: `${estagnados.length} oportunidade${estagnados.length>1?'s':''} sem movimentação há dias.`,
+      impacto: `R$ ${Math.round(valorEstagnados).toLocaleString('pt-BR')} em negócios parados.`,
+      acaoLabel: 'Ver oportunidades', acaoFiltro: { tipo: 'estagnado' },
+    });
+  }
+  if (atrasadas.length > 0) {
+    alertas.push({
+      prioridade: 'atencao', icone: '🟠',
+      desc: `${atrasadas.length} atividade${atrasadas.length>1?'s':''} atrasada${atrasadas.length>1?'s':''}.`,
+      impacto: 'Follow-ups pendentes podem custar a venda.',
+      acaoLabel: 'Ver atividades', acaoFiltro: { tipo: 'atividadesAtrasadas' },
+    });
+  }
+  if (abertos.length >= 5 && pctConcentracao >= 0.5) {
+    const etapaTop = etapas.find(e=>e.id===etapasAbertasIds[contagemPorEtapa.indexOf(maxContagem)]);
+    alertas.push({
+      prioridade: 'atencao', icone: '🟠',
+      desc: `${Math.round(pctConcentracao*100)}% do seu pipeline está concentrado em "${etapaTop?.nome||'uma etapa'}".`,
+      impacto: 'Pode existir um gargalo nessa etapa.',
+      acaoLabel: 'Ver pipeline', acaoFiltro: { tipo: 'etapa', valor: etapaTop?.id||'' },
+    });
+  }
+  const semResponsavel = abertos.filter(n=>!n.owner_id).length;
+  if (semResponsavel > 0) {
+    alertas.push({
+      prioridade: 'atencao', icone: '🟠',
+      desc: `${semResponsavel} negócio${semResponsavel>1?'s':''} sem responsável definido.`,
+      impacto: 'Negócios sem dono tendem a ficar esquecidos.',
+      acaoLabel: 'Ver pipeline', acaoFiltro: { tipo: 'semResponsavel' },
+    });
+  }
+  if (alertas.length === 0) {
+    alertas.push({
+      prioridade: 'ok', icone: '🟢',
+      desc: 'Tudo certo por aqui — nenhum alerta hoje.',
+      impacto: 'Continue assim.',
+      acaoLabel: null, acaoFiltro: null,
+    });
+  }
+
+  // ── Onde existe oportunidade — 4 insights fixos, só com campos personalizados
+  // do tipo seleção: melhor/pior grupo por valor (R$) e melhor/pior por
+  // quantidade (taxa de conversão %). Amostra mínima evita ruído estatístico.
+  const oportunidades = [];
+  const fechados = negocios.filter(n => idsFinal.includes(n.etapa_id));
+  const AMOSTRA_MIN = 5;
+
+  const gruposCampos = []; // {campoNome, valorGrupo, taxaConv, valorGanho, n}
+  camposCustom.filter(c => c.tipo === 'selecao').forEach(campo => {
+    const porValor = {};
+    fechados.forEach(n => {
+      const v = (n.campos_valores || {})[campo.id];
+      if (!v) return;
+      porValor[v] = porValor[v] || [];
+      porValor[v].push(n);
+    });
+    Object.entries(porValor).forEach(([valorGrupo, ns]) => {
+      if (ns.length < AMOSTRA_MIN) return;
+      const { conv } = calcularConversao(ns, idsGanho, idsPerdido);
+      const valorGanho = ns.filter(n=>idsGanho.includes(n.etapa_id)).reduce((s,n)=>s+(n.valor_fechado||n.valor||0),0);
+      if (conv === null) return;
+      gruposCampos.push({ campoNome: campo.nome, valorGrupo, taxaConv: conv, valorGanho, n: ns.length });
+    });
+  });
+
+  if (gruposCampos.length > 0) {
+    const maiorPorValor = [...gruposCampos].sort((a,b)=>b.valorGanho-a.valorGanho)[0];
+    const maiorPorQtd    = [...gruposCampos].sort((a,b)=>b.taxaConv-a.taxaConv)[0];
+    const menorPorValor  = [...gruposCampos].sort((a,b)=>a.valorGanho-b.valorGanho)[0];
+    const menorPorQtd    = [...gruposCampos].sort((a,b)=>a.taxaConv-b.taxaConv)[0];
+
+    if (maiorPorValor) oportunidades.push(
+      `Maior conversão em valor: ${maiorPorValor.campoNome} "${maiorPorValor.valorGrupo}" gerou R$ ${Math.round(maiorPorValor.valorGanho).toLocaleString('pt-BR')} em negócios ganhos.`);
+    if (maiorPorQtd) oportunidades.push(
+      `Maior conversão em quantidade: ${maiorPorQtd.campoNome} "${maiorPorQtd.valorGrupo}" converte ${maiorPorQtd.taxaConv}% dos negócios fechados.`);
+    if (menorPorValor && (gruposCampos.length < 2 || menorPorValor.valorGrupo !== maiorPorValor.valorGrupo || menorPorValor.campoNome !== maiorPorValor.campoNome)) oportunidades.push(
+      `Menor desempenho em valor: ${menorPorValor.campoNome} "${menorPorValor.valorGrupo}" gerou apenas R$ ${Math.round(menorPorValor.valorGanho).toLocaleString('pt-BR')} em negócios ganhos — vale investigar.`);
+    if (menorPorQtd && (gruposCampos.length < 2 || menorPorQtd.valorGrupo !== maiorPorQtd.valorGrupo || menorPorQtd.campoNome !== maiorPorQtd.campoNome)) oportunidades.push(
+      `Menor desempenho em quantidade: ${menorPorQtd.campoNome} "${menorPorQtd.valorGrupo}" converte só ${menorPorQtd.taxaConv}% dos fechados — vale revisar a abordagem.`);
+  }
+
+  // ── Diagnóstico comercial (mês atual vs anterior) ─────────────────────
+  const ticketAtual = ganhosAtual.length ? receitaGanhaAtual/ganhosAtual.length : 0;
+  const ticketAnt   = ganhosAnt.length ? receitaGanhaAnt/ganhosAnt.length : 0;
+  const iniciadosAtual = negociosNoPeriodo(negocios, mIni, mFim).length;
+  const iniciadosAnt   = negociosNoPeriodo(negocios, maIni, maFim).length;
+
+  const melhorou = [];
+  const piorou = [];
+  const recomendacoes = [];
+
+  if (convAtual !== null && convAnt !== null && convAtual > convAnt) melhorou.push(`Conversão subiu de ${convAnt}% para ${convAtual}%.`);
+  if (ticketAtual > ticketAnt && ticketAnt > 0) melhorou.push(`Ticket médio cresceu de R$ ${Math.round(ticketAnt).toLocaleString('pt-BR')} para R$ ${Math.round(ticketAtual).toLocaleString('pt-BR')}.`);
+  if (iniciadosAtual > iniciadosAnt) melhorou.push(`Mais negócios iniciados este mês (${iniciadosAtual} vs ${iniciadosAnt}).`);
+  if (melhorou.length === 0) melhorou.push('Ainda reunindo histórico suficiente para comparar meses.');
+
+  if (convAtual !== null && convAnt !== null && convAtual < convAnt) piorou.push(`Conversão caiu de ${convAnt}% para ${convAtual}%.`);
+  if (estagnados.length > 0) piorou.push(`${estagnados.length} negócio${estagnados.length>1?'s':''} parado${estagnados.length>1?'s':''} sem avançar.`);
+  if (atrasadas.length > 0) piorou.push(`${atrasadas.length} follow-up${atrasadas.length>1?'s':''} atrasado${atrasadas.length>1?'s':''}.`);
+  if (piorou.length === 0) piorou.push('Nenhum ponto crítico identificado este mês.');
+
+  if (abertos.length) {
+    const altoValor = abertos.filter(n=>(n.valor||0) >= 10000);
+    if (altoValor.length) recomendacoes.push(`Priorize os ${altoValor.length} negócios acima de R$ 10 mil — eles concentram mais receita potencial.`);
+  }
+  if (estagnados.length > 0) recomendacoes.push(`Retome as ${estagnados.length} propostas sem movimentação antes que esfriem.`);
+  if (atrasadas.length > 0) recomendacoes.push('Entre em contato com os clientes que têm atividades atrasadas.');
+  if (pctConcentracao >= 0.5 && abertos.length >= 5) recomendacoes.push('Avalie o que está represando negócios na etapa com maior concentração.');
+  if (oportunidades.length > 0) recomendacoes.push('Invista mais tempo nos canais e vendedores com melhor conversão, listados em oportunidades.');
+  if (recomendacoes.length === 0) recomendacoes.push('Continue com a rotina atual — nenhum ajuste urgente identificado.');
+
+  return {
+    score: scoreFinal, nivel, versao: DIAG_VERSION,
+    kpis, alertas, oportunidades: oportunidades.slice(0,4),
+    diagnostico: { melhorou: melhorou.slice(0,3), piorou: piorou.slice(0,3), recomendacoes: recomendacoes.slice(0,5) },
+  };
+}
+
+// ── Cache diário: calcula uma vez por dia e reaproveita nos acessos seguintes
+async function carregarInicio() {
+  const dataHoje = hoje();
+  let diag = null;
+
+  try {
+    const { data: cache } = await sb.from('diagnostico_diario')
+      .select('*').eq('empresa_id', empresaAtual.id).eq('data', dataHoje).maybeSingle();
+    if (cache && cache.diagnostico && cache.diagnostico.versao === DIAG_VERSION) {
+      diag = { score: cache.score_saude, nivel: cache.score_saude<=30?'saudavel':(cache.score_saude<=60?'atencao':'critico'),
+        kpis: cache.kpis, alertas: cache.alertas, oportunidades: cache.oportunidades, diagnostico: cache.diagnostico };
+    }
+  } catch (e) {
+    console.error('Cache de diagnóstico indisponível (tabela pode não existir ainda):', e);
+  }
+
+  if (!diag) {
+    diag = montarDiagnostico();
+    try {
+      await sb.from('diagnostico_diario').upsert({
+        empresa_id: empresaAtual.id, data: dataHoje,
+        score_saude: diag.score, kpis: diag.kpis, alertas: diag.alertas,
+        oportunidades: diag.oportunidades, diagnostico: diag.diagnostico,
+      }, { onConflict: 'empresa_id,data' });
+    } catch (e) {
+      console.error('Não foi possível salvar o retrato do dia (rode setup-diagnostico-diario.sql):', e);
+    }
+  }
+
+  renderInicio(diag);
+}
+
+// Leva o usuário da Home direto para os negócios/atividades exatos do alerta clicado
+function irParaAlerta(filtro) {
+  if (!filtro) return;
+  if (filtro.tipo === 'estagnado') {
+    switchTab('pipeline');
+    filtroPipeSemResponsavel = false;
+    document.getElementById('pipe-filtro-estagnado').value = 'estagnado';
+    document.getElementById('pipe-filtro-etapa').value = '';
+    renderView();
+  } else if (filtro.tipo === 'etapa') {
+    switchTab('pipeline');
+    filtroPipeSemResponsavel = false;
+    document.getElementById('pipe-filtro-estagnado').value = '';
+    document.getElementById('pipe-filtro-etapa').value = filtro.valor || '';
+    renderView();
+  } else if (filtro.tipo === 'semResponsavel') {
+    switchTab('pipeline');
+    filtroPipeSemResponsavel = true;
+    document.getElementById('pipe-filtro-estagnado').value = '';
+    document.getElementById('pipe-filtro-etapa').value = '';
+    renderView();
+  } else if (filtro.tipo === 'atividadesAtrasadas') {
+    switchTab('atividades');
+    const sel = document.getElementById('filtro-atv');
+    if (sel) { sel.value = 'atrasada'; renderAtividades(); }
+  }
+}
+
+function renderInicio(diag) {
+  const nomeUsuario = (perfil?.nome || '').split(' ')[0] || 'tudo bem';
+  const h = new Date().getHours();
+  const saudacao = h < 12 ? 'Bom dia' : (h < 18 ? 'Boa tarde' : 'Boa noite');
+  const nivelTexto = { saudavel: 'saudável', atencao: 'em atenção', critico: 'crítico' }[diag.nivel];
+  const nAlertasAcao = diag.alertas.filter(a=>a.prioridade!=='ok').length;
+
+  document.getElementById('home-saudacao').textContent = `${saudacao}, ${nomeUsuario}.`;
+  document.getElementById('home-saudacao-sub').textContent = nAlertasAcao>0
+    ? `${nAlertasAcao} ponto${nAlertasAcao>1?'s':''} pede${nAlertasAcao>1?'m':''} sua atenção hoje — veja os alertas abaixo antes de começar o dia.`
+    : 'Nada urgente por aqui — hora de olhar as oportunidades abaixo.';
+
+  const selo = document.getElementById('home-selo');
+  const seloMap = { saudavel: ['saudavel','🟢 Saudável'], atencao: ['atencao','🟠 Atenção'], critico: ['critico','🔴 Crítico'] };
+  const [classe, label] = seloMap[diag.nivel];
+  selo.className = 'home-selo ' + classe;
+  selo.textContent = label;
+
+  // KPIs
+  document.getElementById('home-kpi-receita').textContent = fR(diag.kpis.receitaPrevista);
+  document.getElementById('home-kpi-receita-sub').textContent = diag.kpis.cresceReceita !== null
+    ? `${diag.kpis.cresceReceita>=0?'+':''}${diag.kpis.cresceReceita}% em receita fechada vs mês anterior.`
+    : 'Ainda sem histórico do mês anterior para comparar.';
+
+  document.getElementById('home-kpi-risco').textContent = diag.kpis.riscoQtd;
+  document.getElementById('home-kpi-risco-sub').textContent = diag.kpis.riscoQtd>0
+    ? `R$ ${Math.round(diag.kpis.riscoValor).toLocaleString('pt-BR')} em negócios sem movimentação.`
+    : 'Nenhum negócio parado agora.';
+
+  document.getElementById('home-kpi-atrasos').textContent = diag.kpis.atrasosQtd;
+  document.getElementById('home-kpi-atrasos-sub').textContent = diag.kpis.atrasosQtd>0
+    ? 'Clientes aguardando retorno.'
+    : 'Nenhum follow-up atrasado.';
+
+  // Alertas
+  document.getElementById('home-alertas').innerHTML = diag.alertas.map((a, i) => `
+    <div class="alerta-card p-${a.prioridade}">
+      <div class="alerta-icone">${a.icone}</div>
+      <div class="alerta-corpo">
+        <div class="alerta-desc">${a.desc}</div>
+        <div class="alerta-impacto">${a.impacto}</div>
+      </div>
+      ${a.acaoLabel ? `<div class="alerta-acao"><button class="btn-sec" onclick='irParaAlerta(${JSON.stringify(a.acaoFiltro)})'>${a.acaoLabel}</button></div>` : ''}
+    </div>`).join('');
+
+  // Oportunidades
+  const elOp = document.getElementById('home-oportunidades');
+  elOp.innerHTML = diag.oportunidades.length
+    ? diag.oportunidades.map(o => `<div class="oport-card">${o}</div>`).join('')
+    : '<div class="home-empty">Ainda estamos reunindo dados suficientes para identificar oportunidades. Volte em alguns dias.</div>';
+
+  // Diagnóstico comercial
+  document.getElementById('diag-melhorou').innerHTML = diag.diagnostico.melhorou.map(t=>`<div class="diag-item">${t}</div>`).join('');
+  document.getElementById('diag-piorou').innerHTML   = diag.diagnostico.piorou.map(t=>`<div class="diag-item">${t}</div>`).join('');
+  document.getElementById('diag-recom').innerHTML    = diag.diagnostico.recomendacoes.map(t=>`<div class="diag-item">${t}</div>`).join('');
+
+  // Próximas atividades (5 primeiras pendentes, ordenadas por data)
+  const hojeIni = new Date(); hojeIni.setHours(0,0,0,0);
+  const amanha  = new Date(hojeIni); amanha.setDate(amanha.getDate()+1);
+  const proximas = [...atividades].filter(a=>!a.concluida && a.data)
+    .sort((a,b)=>new Date(a.data)-new Date(b.data)).slice(0,5);
+
+  const elAt = document.getElementById('home-atividades');
+  elAt.innerHTML = proximas.length ? proximas.map(a => {
+    const dt = new Date(a.data);
+    let quando = 'Depois';
+    if (dt < amanha && dt >= hojeIni) quando = 'Hoje';
+    else if (dt < new Date(amanha.getTime()+86400000) && dt >= amanha) quando = 'Amanhã';
+    else if (dt < hojeIni) quando = 'Atrasada';
+    return `<div class="home-ativ-item">
+      <div><span class="home-ativ-quando">${quando}</span><span class="home-ativ-tt">${a.titulo}</span>
+      <div class="home-ativ-neg">${a.negocio?.titulo||''}</div></div>
+      ${a.negocio_id ? `<button class="btn-sec" onclick="abrirModalNegocio('${a.negocio_id}')">Abrir negócio</button>` : ''}
+    </div>`;
+  }).join('') : '<div class="home-empty">Nenhuma atividade pendente. 🎉</div>';
+}
+
 // Iniciar
 iniciar();
+
+
 </script>
 
 <!-- MODAL TROCAR SENHA (dentro do app) -->
