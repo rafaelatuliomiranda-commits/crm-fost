@@ -700,7 +700,7 @@ tbody tr:hover td{background:rgba(123,47,255,.06);}
         </div>
       </div>
 
-      <div class="config-card" style="border:1px solid rgba(251,191,36,.25);background:rgba(251,191,36,.04)">
+      <div class="config-card" id="card-dados-teste" style="border:1px solid rgba(251,191,36,.25);background:rgba(251,191,36,.04);display:none">
         <div class="config-card-title" style="color:var(--yellow)">Dados de teste</div>
         <div style="font-size:12px;color:var(--dim);margin-bottom:14px;line-height:1.6">
           Insere 100 negócios simulados com campos personalizados preenchidos. Use para testar o CRM com dados reais. Pode ser revertido apagando os negócios pelo Supabase.
@@ -758,7 +758,10 @@ tbody tr:hover td{background:rgba(123,47,255,.06);}
         </select>
       </div>
     </div>
-    <div class="field"><label>Próximo passo</label><input id="n-proximo" placeholder="O que fazer agora?"></div>
+    <div class="field-row">
+      <div class="field"><label>Próximo passo</label><input id="n-proximo" placeholder="O que fazer agora?"></div>
+      <div class="field"><label>Responsável</label><select id="n-owner"><option value="">—</option></select></div>
+    </div>
 
     <div id="n-ganho-wrap" style="display:none">
       <div class="modal-sep"></div>
@@ -929,7 +932,14 @@ async function fazerLogin() {
   btn.disabled = true; btn.textContent = 'Entrando…';
   const { data, error } = await sb.auth.signInWithPassword({ email, password: senha });
   if (error) {
-    err.textContent = 'E-mail ou senha incorretos.';
+    // "Email not confirmed" é um erro bem diferente de senha errada — o
+    // projeto exige clicar num link de confirmação antes do 1º login.
+    // Mostrar a mensagem genérica nesse caso mascarava a causa real.
+    if (error.message && error.message.toLowerCase().includes('email not confirmed')) {
+      err.textContent = 'Este e-mail ainda não foi confirmado. Verifique a caixa de entrada (e spam) pelo link de confirmação enviado no cadastro.';
+    } else {
+      err.textContent = 'E-mail ou senha incorretos.';
+    }
     err.style.display = 'block';
     btn.disabled = false; btn.textContent = 'Entrar';
     return;
@@ -941,6 +951,20 @@ async function posLogin(user) {
   usuarioAtual = user;
   const { data } = await sb.from('perfis').select('*').eq('id', user.id).single();
   perfil = data;
+
+  // Se o login funcionou mas não existe perfil vinculado (ex: usuário
+  // removido em Configurações, que só apaga o perfil, não o login em si —
+  // ou perfil não sincronizado), sem essa checagem o app travava em branco
+  // logo após o login, sem explicação nenhuma pro usuário.
+  if (!perfil) {
+    await sb.auth.signOut();
+    document.getElementById('lerr').textContent = 'Este login não está mais vinculado a nenhuma empresa. Fale com o administrador.';
+    document.getElementById('lerr').style.display = 'block';
+    document.getElementById('lbtn').disabled = false;
+    document.getElementById('lbtn').textContent = 'Entrar';
+    return;
+  }
+
   document.getElementById('nav-user').textContent = perfil?.nome || user.email;
   document.getElementById('login-screen').style.display = 'none';
 
@@ -981,6 +1005,14 @@ async function selecionarCliente(empId) {
   document.getElementById('cliente-screen').style.display = 'none';
   document.getElementById('nav-cliente-nome').textContent = empresaAtual.nome;
   document.getElementById('nav-cliente-nome').style.display = '';
+  // Evita que filtros ativados numa empresa "vazem" para a próxima ao trocar
+  // de cliente (ex: o filtro "sem responsável" acionado por um alerta da Home).
+  filtroPipeSemResponsavel = false;
+  filtrosKanban = {};
+  const elBusca = document.getElementById('pipe-busca'); if (elBusca) elBusca.value = '';
+  const elEstag = document.getElementById('pipe-filtro-estagnado'); if (elEstag) elEstag.value = '';
+  const elEtapaF = document.getElementById('pipe-filtro-etapa'); if (elEtapaF) elEtapaF.value = '';
+  switchTab('inicio');
   await abrirApp();
 }
 
@@ -1024,6 +1056,16 @@ async function carregarTudo() {
     }
   } catch (e) {
     console.error('Erro ao carregar card de usuários:', e);
+  }
+
+  try {
+    // Card de Dados de teste — EXCLUSIVO do super_admin (fost). Um admin
+    // cliente não pode ver isso, ou corre o risco de poluir os próprios
+    // dados reais com 100 negócios falsos por engano.
+    const elSeed = document.getElementById('card-dados-teste');
+    if (elSeed) elSeed.style.display = (perfil?.papel === 'super_admin') ? '' : 'none';
+  } catch (e) {
+    console.error('Erro ao configurar card de dados de teste:', e);
   }
 
   try {
@@ -1443,6 +1485,7 @@ function renderTabela() {
       else if (sortCol===2) { va=a.contato_nome||''; vb=b.contato_nome||''; }
       else if (sortCol===3) { va=etapas.find(e=>e.id===a.etapa_id)?.nome||''; vb=etapas.find(e=>e.id===b.etapa_id)?.nome||''; }
       else if (sortCol===4) { va=a.valor||0; vb=b.valor||0; }
+      else if (sortCol===5) { va=a.proximo_passo||''; vb=b.proximo_passo||''; }
       else if (sortCol===6) { va=a.data_entrada||''; vb=b.data_entrada||''; }
       else if (sortCol>=7 && sortCol<7+camposCustom.length) {
         const c = camposCustom[sortCol-7];
@@ -1489,10 +1532,14 @@ async function soltar(etapaId) {
   const id = arrastando; arrastando = null;
   const neg = negocios.find(n=>n.id===id);
   if (!neg || neg.etapa_id===etapaId) return;
-  const etapaDest = etapas.find(e=>e.id===etapaId);
   const update = { etapa_id: etapaId, ultima_atualizacao: new Date().toISOString() };
-  if (etapaDest?.nome.toLowerCase().includes('ganho')) update.data_fechamento = hoje();
-  await sb.from('negocios').update(update).eq('id', id);
+  // Identifica Ganho/Perdido pela POSIÇÃO (últimas 2 etapas), não pelo nome —
+  // etapas podem ser renomeadas em Configurações, e detectar por texto
+  // ("includes('ganho')") quebra silenciosamente se isso acontecer.
+  const { idsGanho, idsPerdido } = limitesEtapas();
+  if (idsGanho.includes(etapaId) || idsPerdido.includes(etapaId)) update.data_fechamento = hoje();
+  const { error } = await sb.from('negocios').update(update).eq('id', id);
+  if (error) { alert('Não foi possível mover o negócio: ' + error.message); return; }
   await carregarNegocios();
   renderView(); atualizarKPIs(); renderDashboard();
 }
@@ -1520,6 +1567,17 @@ function atualizarFiltroEtapas() {
     etapas.map(e=>`<option value="${e.id}">${e.nome}</option>`).join('');
 }
 
+// Popula o dropdown de Responsável. Admin/super_admin veem todos os
+// usuários da empresa (usuariosEmpresa); vendedor sem essa lista carregada
+// vê pelo menos a si mesmo como opção.
+function atualizarSelectOwner() {
+  const sel = document.getElementById('n-owner');
+  const lista = (usuariosEmpresa && usuariosEmpresa.length)
+    ? usuariosEmpresa
+    : (perfil ? [{ id: perfil.id, nome: perfil.nome }] : []);
+  sel.innerHTML = '<option value="">—</option>' + lista.map(u=>`<option value="${u.id}">${u.nome}</option>`).join('');
+}
+
 async function abrirModalNegocio(id) {
   // Verificar limite só ao criar novo
   if (!id) {
@@ -1529,6 +1587,7 @@ async function abrirModalNegocio(id) {
   document.getElementById('mn-titulo').textContent = id ? 'Editar negócio' : 'Novo negócio';
   document.getElementById('n-id').value = id || '';
   document.getElementById('n-btn-del').style.display = id ? '' : 'none';
+  atualizarSelectOwner();
 
   if (id) {
     const n = negocios.find(x=>x.id===id);
@@ -1538,6 +1597,7 @@ async function abrirModalNegocio(id) {
     document.getElementById('n-valor').value     = n.valor||'';
     document.getElementById('n-origem').value    = n.origem||'';
     document.getElementById('n-proximo').value   = n.proximo_passo||'';
+    document.getElementById('n-owner').value     = n.owner_id||'';
     document.getElementById('n-vfechado').value  = n.valor_fechado||'';
     document.getElementById('n-dfechamento').value = n.data_fechamento||'';
     document.getElementById('n-motivo').value    = n.motivo_perda||'';
@@ -1554,6 +1614,8 @@ async function abrirModalNegocio(id) {
     ['n-titulo','n-valor','n-origem','n-proximo','n-vfechado','n-dfechamento','n-motivo',
      'n-cnom','n-cemp','n-ctel','n-cemail','n-ccargo'].forEach(f=>document.getElementById(f).value='');
     if (etapas.length) document.getElementById('n-etapa').value = etapas[0].id;
+    // Responsável padrão: quem está criando o negócio
+    document.getElementById('n-owner').value = perfil?.id || '';
     toggleEtapaExtra();
     renderCamposCustomModal({});
     document.getElementById('n-ativ-list').innerHTML='';
@@ -1585,9 +1647,9 @@ function renderCamposCustomModal(vals) {
 
 function toggleEtapaExtra() {
   const etapaId = document.getElementById('n-etapa').value;
-  const etapa   = etapas.find(e=>e.id===etapaId);
-  const isGanho   = etapa?.nome.toLowerCase().includes('ganho');
-  const isPerdido = etapa?.nome.toLowerCase().includes('perdido');
+  const { idsGanho, idsPerdido } = limitesEtapas();
+  const isGanho   = idsGanho.includes(etapaId);
+  const isPerdido = idsPerdido.includes(etapaId);
   document.getElementById('n-ganho-wrap').style.display   = isGanho   ? '' : 'none';
   document.getElementById('n-perdido-wrap').style.display = isPerdido ? '' : 'none';
 }
@@ -1658,9 +1720,9 @@ async function delAtivNeg(id, negId) {
 async function salvarNegocio() {
   const id    = document.getElementById('n-id').value;
   const etapaId = document.getElementById('n-etapa').value;
-  const etapa = etapas.find(e=>e.id===etapaId);
-  const isGanho   = etapa?.nome.toLowerCase().includes('ganho');
-  const isPerdido = etapa?.nome.toLowerCase().includes('perdido');
+  const { idsGanho, idsPerdido } = limitesEtapas();
+  const isGanho   = idsGanho.includes(etapaId);
+  const isPerdido = idsPerdido.includes(etapaId);
 
   // Coletar campos custom
   const cv = {};
@@ -1675,6 +1737,7 @@ async function salvarNegocio() {
     valor:            parseFloat(document.getElementById('n-valor').value)||0,
     origem:           document.getElementById('n-origem').value||null,
     proximo_passo:    document.getElementById('n-proximo').value.trim()||null,
+    owner_id:         document.getElementById('n-owner').value||null,
     valor_fechado:    isGanho ? parseFloat(document.getElementById('n-vfechado').value)||null : null,
     data_fechamento:  (isGanho||isPerdido) ? (document.getElementById('n-dfechamento').value||hoje()) : null,
     motivo_perda:     isPerdido ? document.getElementById('n-motivo').value||null : null,
@@ -1858,7 +1921,8 @@ async function excluirEtapa(id) {
   const idsFinal = etapasOrd.slice(-2).map(e=>e.id);
   if (idsFinal.includes(id)) return alert('As etapas Ganho e Perdido não podem ser excluídas — são obrigatórias no funil.');
   if (!confirm('Excluir esta etapa? Negócios nela ficarão sem etapa.')) return;
-  await sb.from('etapas').delete().eq('id',id);
+  const { error } = await sb.from('etapas').delete().eq('id',id);
+  if (error) return alert('Não foi possível excluir: ' + error.message + (error.message?.includes('foreign key') ? ' (mova os negócios dessa etapa antes de excluí-la)' : ''));
   await carregarEtapas();
   atualizarSelectEtapas(); atualizarFiltroEtapas();
   renderConfigEtapas(); renderView();
@@ -1997,17 +2061,48 @@ async function importarCSV(event) {
   const linhas = texto.split('\n').map(l=>l.split(',').map(v=>v.trim().replace(/^"|"$/g,'').replace(/""/g,'"')));
   const header = linhas[0].map(h=>h.toLowerCase());
   const dados  = linhas.slice(1).filter(l=>l.length>1&&l[0]);
-  const rows   = dados.map(l=>({
-    empresa_id:       empresaAtual.id,
-    titulo:           l[header.indexOf('titulo')]||'',
-    contato_nome:     l[header.indexOf('contato_nome')]||null,
-    contato_empresa:  l[header.indexOf('contato_empresa')]||null,
-    contato_telefone: l[header.indexOf('contato_telefone')]||null,
-    valor:            parseFloat(l[header.indexOf('valor')])||0,
-    origem:           l[header.indexOf('origem')]||null,
-    proximo_passo:    l[header.indexOf('proximo_passo')]||null,
-  })).filter(r=>r.titulo);
-  if (rows.length) await sb.from('negocios').insert(rows);
+
+  const idxEtapa = header.indexOf('etapa');
+  const etapaPadrao = [...etapas].sort((a,b)=>a.ordem-b.ordem)[0];
+  const ownerPadrao = perfil?.id || null;
+
+  const rows = dados.map(l => {
+    const nomeEtapa = idxEtapa>=0 ? (l[idxEtapa]||'').trim().toLowerCase() : '';
+    const etapaMatch = nomeEtapa ? etapas.find(e=>e.nome.toLowerCase()===nomeEtapa) : null;
+    const cv = {};
+    camposCustom.forEach(c => {
+      const idx = header.indexOf(c.nome.toLowerCase());
+      if (idx>=0 && l[idx]) cv[c.id] = l[idx];
+    });
+    return {
+      empresa_id:       empresaAtual.id,
+      titulo:           l[header.indexOf('titulo')]||'',
+      contato_nome:     l[header.indexOf('contato_nome')]||null,
+      contato_empresa:  l[header.indexOf('contato_empresa')]||null,
+      contato_telefone: l[header.indexOf('contato_telefone')]||null,
+      contato_email:    l[header.indexOf('contato_email')]||null,
+      valor:            parseFloat(l[header.indexOf('valor')])||0,
+      valor_fechado:    parseFloat(l[header.indexOf('valor_fechado')])||null,
+      origem:           l[header.indexOf('origem')]||null,
+      proximo_passo:    l[header.indexOf('proximo_passo')]||null,
+      motivo_perda:     l[header.indexOf('motivo_perda')]||null,
+      etapa_id:         (etapaMatch || etapaPadrao)?.id || null,
+      owner_id:         ownerPadrao,
+      campos_valores:   cv,
+      ultima_atualizacao: new Date().toISOString(),
+    };
+  }).filter(r=>r.titulo);
+
+  if (!rows.length) { alert('Nenhuma linha válida encontrada no CSV.'); event.target.value=''; return; }
+  if (negocios.length + rows.length > LIMITE_NEGOCIOS) {
+    alert(`Essa importação levaria a empresa a ${negocios.length + rows.length} negócios, acima do limite de ${LIMITE_NEGOCIOS}. Reduza o arquivo ou fale com a fost para ampliar o plano.`);
+    event.target.value=''; return;
+  }
+  if (!etapaPadrao) { alert('Crie ao menos uma etapa no pipeline antes de importar negócios.'); event.target.value=''; return; }
+
+  const { error } = await sb.from('negocios').insert(rows);
+  if (error) { alert('Erro ao importar: ' + error.message); event.target.value=''; return; }
+
   await carregarNegocios(); renderView(); atualizarKPIs(); renderDashboard();
   alert(`${rows.length} negócios importados.`);
   event.target.value='';
@@ -2050,14 +2145,40 @@ async function criarEmpresa() {
   ]);
 
   // 3. Criar usuário via signUp (funciona sem permissão de admin)
+  // Guarda a sessão do super_admin ANTES: o signUp troca automaticamente a
+  // sessão ativa do navegador para o usuário recém-criado — sem restaurar,
+  // o super_admin ficaria "logado como o cliente novo" a partir daqui, e o
+  // insert do perfil seguinte rodaria sem permissão e falharia silenciosamente.
+  const { data: { session: sessaoSuperAdmin } } = await sb.auth.getSession();
+
   const { data: usr, error: errUsr } = await sb.auth.signUp({
     email, password: senha,
     options: { data: { nome: adminNome } }
   });
 
-  if (!errUsr && usr?.user) {
+  if (errUsr) {
+    if (sessaoSuperAdmin) await sb.auth.setSession({ access_token: sessaoSuperAdmin.access_token, refresh_token: sessaoSuperAdmin.refresh_token });
+    btnSave.disabled = false; btnSave.textContent = 'Criar cliente';
+    return alert('Empresa criada, mas houve erro ao criar o login do admin: ' + errUsr.message);
+  }
+  if (usr?.user && usr.user.identities && usr.user.identities.length === 0) {
+    if (sessaoSuperAdmin) await sb.auth.setSession({ access_token: sessaoSuperAdmin.access_token, refresh_token: sessaoSuperAdmin.refresh_token });
+    btnSave.disabled = false; btnSave.textContent = 'Criar cliente';
+    return alert('Esse e-mail já está cadastrado no sistema. Use outro e-mail para o admin desse cliente.');
+  }
+
+  // Restaura a sessão do super_admin ANTES de gravar o perfil
+  if (sessaoSuperAdmin) await sb.auth.setSession({ access_token: sessaoSuperAdmin.access_token, refresh_token: sessaoSuperAdmin.refresh_token });
+
+  let precisaConfirmar = false;
+  if (usr?.user) {
     // Criar perfil vinculado à empresa
-    await sb.from('perfis').insert({ id:usr.user.id, nome:adminNome, papel:'admin', empresa_id:emp.id });
+    const { error: errPerfil } = await sb.from('perfis').insert({ id:usr.user.id, nome:adminNome, papel:'admin', empresa_id:emp.id });
+    if (errPerfil) {
+      btnSave.disabled = false; btnSave.textContent = 'Criar cliente';
+      return alert('A conta de login foi criada, mas houve um erro ao vincular o perfil: ' + errPerfil.message);
+    }
+    precisaConfirmar = !usr.user.confirmed_at && !usr.user.email_confirmed_at;
   }
 
   // 4. Mostrar resultado com credenciais
@@ -2068,7 +2189,8 @@ async function criarEmpresa() {
     + '<strong>Empresa:</strong> '+nome+'<br>'
     + '<strong>Login:</strong> '+email+'<br>'
     + '<strong>Senha provisória:</strong> <code style="background:rgba(0,0,0,.2);padding:2px 6px;border-radius:3px">'+senha+'</code><br><br>'
-    + '<span style="color:var(--dim);font-size:11px">Envie essas credenciais para o cliente. Ele pode trocar a senha depois do primeiro acesso.</span>';
+    + '<span style="color:var(--dim);font-size:11px">Envie essas credenciais para o cliente. Ele pode trocar a senha depois do primeiro acesso.</span>'
+    + (precisaConfirmar ? '<br><br><span style="color:var(--yellow);font-size:11px">⚠ Este projeto exige confirmação de e-mail. O cliente só conseguirá logar depois de clicar no link enviado para ' + email + '.</span>' : '');
 
   await mostrarSeletorClientes();
 }
@@ -2095,6 +2217,11 @@ async function carregarDadosTeste() {
   const btn = event.target;
   const status = document.getElementById('seed-status');
   if (!confirm('Inserir 100 negócios de teste nesta empresa? Os campos personalizados precisam estar criados primeiro (Cargo, Faturamento, Porte, Colaboradores, Segmento, Origem do Lead).')) return;
+
+  if (negocios.length + 100 > LIMITE_NEGOCIOS) {
+    alert(`Essa empresa já tem ${negocios.length} negócios. Inserir mais 100 passaria do limite de ${LIMITE_NEGOCIOS} do plano.`);
+    return;
+  }
 
   btn.disabled = true;
   btn.textContent = 'Carregando...';
@@ -2183,6 +2310,7 @@ async function carregarDadosTeste() {
       return {
         empresa_id:empresaAtual.id, titulo:n.titulo,
         etapa_id:getEtapaId(n.etapa_nome),
+        owner_id:(usuariosEmpresa && usuariosEmpresa.length) ? usuariosEmpresa[Math.floor(Math.random()*usuariosEmpresa.length)].id : (perfil?.id||null),
         contato_nome:n.contato_nome, contato_empresa:n.contato_empresa,
         contato_telefone:n.contato_telefone, contato_email:n.contato_email,
         contato_cargo:n.contato_cargo, valor:n.valor,
@@ -2684,14 +2812,40 @@ async function criarUsuario() {
   const btn = document.getElementById('nu-btn');
   btn.disabled = true; btn.textContent = 'Criando…';
 
+  // Guarda a sessão do admin ANTES do signUp: o signUp troca automaticamente
+  // a sessão ativa do navegador para o usuário recém-criado, o que fazia o
+  // insert do perfil seguinte rodar como o vendedor novo (sem permissão de
+  // admin) e falhar silenciosamente — por isso o usuário "sumia".
+  const { data: { session: sessaoAdmin } } = await sb.auth.getSession();
+
   const { data: usr, error } = await sb.auth.signUp({ email, password: senha });
   if (error) {
     btn.disabled = false; btn.textContent = '+ Adicionar usuário';
     return alert('Erro: ' + error.message);
   }
-  if (usr?.user) {
-    await sb.from('perfis').insert({ id: usr.user.id, nome, papel: 'vendedor', empresa_id: empresaAtual.id });
+  // Se o e-mail já existir no sistema, o Supabase não retorna erro (por segurança),
+  // mas devolve um usuário sem "identities" — é assim que detectamos duplicidade.
+  if (usr?.user && usr.user.identities && usr.user.identities.length === 0) {
+    if (sessaoAdmin) await sb.auth.setSession({ access_token: sessaoAdmin.access_token, refresh_token: sessaoAdmin.refresh_token });
+    btn.disabled = false; btn.textContent = '+ Adicionar usuário';
+    return alert('Esse e-mail já está cadastrado no sistema. Use outro e-mail.');
   }
+
+  // Restaura a sessão do admin ANTES de gravar o perfil, para o insert
+  // rodar com as permissões corretas.
+  if (sessaoAdmin) await sb.auth.setSession({ access_token: sessaoAdmin.access_token, refresh_token: sessaoAdmin.refresh_token });
+
+  if (usr?.user) {
+    const { error: errPerfil } = await sb.from('perfis').insert({ id: usr.user.id, nome, papel: 'vendedor', empresa_id: empresaAtual.id });
+    if (errPerfil) {
+      btn.disabled = false; btn.textContent = '+ Adicionar usuário';
+      return alert('A conta de login foi criada, mas houve um erro ao vincular o perfil: ' + errPerfil.message + '. Contate o suporte antes de tentar de novo com o mesmo e-mail.');
+    }
+  }
+
+  // Se o projeto Supabase exige confirmação de e-mail, o usuário não
+  // consegue logar até clicar no link recebido — avisamos isso aqui.
+  const precisaConfirmar = usr?.user && !usr.user.confirmed_at && !usr.user.email_confirmed_at;
 
   // Mostrar credenciais
   const res = document.getElementById('nu-resultado');
@@ -2699,7 +2853,8 @@ async function criarUsuario() {
   res.innerHTML = '<strong style="color:var(--green)">✓ Usuário criado!</strong><br>'
     + '<strong>Login:</strong> ' + email + '<br>'
     + '<strong>Senha:</strong> <code style="background:rgba(0,0,0,.2);padding:2px 6px;border-radius:3px">' + senha + '</code><br>'
-    + '<span style="color:var(--dim);font-size:11px">Envie essas credenciais para o vendedor.</span>';
+    + '<span style="color:var(--dim);font-size:11px">Envie essas credenciais para o vendedor.</span>'
+    + (precisaConfirmar ? '<br><br><span style="color:var(--yellow);font-size:11px">⚠ Este projeto exige confirmação de e-mail. O vendedor só conseguirá logar depois de clicar no link enviado para ' + email + '.</span>' : '');
 
   document.getElementById('nu-nome').value  = '';
   document.getElementById('nu-email').value = '';
@@ -2711,7 +2866,8 @@ async function criarUsuario() {
 
 async function removerUsuario(id) {
   if (!confirm('Remover acesso deste usuário?')) return;
-  await sb.from('perfis').delete().eq('id', id).eq('empresa_id', empresaAtual.id);
+  const { error } = await sb.from('perfis').delete().eq('id', id).eq('empresa_id', empresaAtual.id);
+  if (error) return alert('Não foi possível remover: ' + error.message);
   await carregarUsuariosEmpresa();
 }
 
@@ -2757,8 +2913,8 @@ function negociosEstagnados(lista) {
 }
 
 function atividadesAtrasadas(lista) {
-  const hojeIni = new Date(); hojeIni.setHours(0,0,0,0);
-  return lista.filter(a => !a.concluida && a.data && new Date(a.data) < hojeIni);
+  const h = hoje(); // string 'YYYY-MM-DD' — comparação lexicográfica é segura e evita bug de fuso horário
+  return lista.filter(a => !a.concluida && a.data && a.data < h);
 }
 
 function negociosNoPeriodo(lista, dataIni, dataFim) {
@@ -3075,18 +3231,18 @@ function renderInicio(diag) {
   document.getElementById('diag-recom').innerHTML    = diag.diagnostico.recomendacoes.map(t=>`<div class="diag-item">${t}</div>`).join('');
 
   // Próximas atividades (5 primeiras pendentes, ordenadas por data)
-  const hojeIni = new Date(); hojeIni.setHours(0,0,0,0);
-  const amanha  = new Date(hojeIni); amanha.setDate(amanha.getDate()+1);
+  const hStr  = hoje();
+  const amanhaDt = new Date(); amanhaDt.setDate(amanhaDt.getDate()+1);
+  const amanhaStr = amanhaDt.toISOString().slice(0,10);
   const proximas = [...atividades].filter(a=>!a.concluida && a.data)
-    .sort((a,b)=>new Date(a.data)-new Date(b.data)).slice(0,5);
+    .sort((a,b)=>a.data.localeCompare(b.data)).slice(0,5);
 
   const elAt = document.getElementById('home-atividades');
   elAt.innerHTML = proximas.length ? proximas.map(a => {
-    const dt = new Date(a.data);
     let quando = 'Depois';
-    if (dt < amanha && dt >= hojeIni) quando = 'Hoje';
-    else if (dt < new Date(amanha.getTime()+86400000) && dt >= amanha) quando = 'Amanhã';
-    else if (dt < hojeIni) quando = 'Atrasada';
+    if (a.data < hStr) quando = 'Atrasada';
+    else if (a.data === hStr) quando = 'Hoje';
+    else if (a.data === amanhaStr) quando = 'Amanhã';
     return `<div class="home-ativ-item">
       <div><span class="home-ativ-quando">${quando}</span><span class="home-ativ-tt">${a.titulo}</span>
       <div class="home-ativ-neg">${a.negocio?.titulo||''}</div></div>
