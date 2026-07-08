@@ -3,6 +3,25 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!--
+  CSP como camada extra de defesa. Não elimina XSS via atributos onclick=""
+  inline (o app inteiro depende deles hoje — removê-los é um refactor à parte),
+  mas limita bastante o estrago: mesmo que um payload rode, ele não consegue
+  carregar script de outro domínio nem mandar dado (fetch/XHR) pra fora de
+  self + Supabase. Ajustar aqui se o domínio do Supabase mudar.
+-->
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'self';
+  script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net;
+  style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+  font-src https://fonts.gstatic.com;
+  img-src 'self' data: https:;
+  connect-src 'self' https://nfgrtghuccadiuocacim.supabase.co wss://nfgrtghuccadiuocacim.supabase.co;
+  frame-ancestors 'none';
+  base-uri 'self';
+  form-action 'self';
+  object-src 'none';
+">
 <title>CRM — fost</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&display=swap" rel="stylesheet">
@@ -446,7 +465,7 @@ tbody tr:hover td{background:rgba(123,47,255,.06);}
     <div class="lf">
       <label>Nova senha</label>
       <div style="position:relative;margin-bottom:14px">
-        <input id="nova-senha" type="password" placeholder="Mínimo 6 caracteres" style="margin-bottom:0;padding-right:42px">
+        <input id="nova-senha" type="password" placeholder="Mínimo 8 caracteres" style="margin-bottom:0;padding-right:42px">
         <button type="button" onclick="toggleSenhaCampo('nova-senha','eye2')" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:rgba(255,255,255,.4);padding:4px">
           <svg id="eye2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;display:block"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
         </button>
@@ -1018,6 +1037,22 @@ var calOffset    = 0;
 const hoje = () => new Date().toISOString().slice(0,10);
 const fR   = v => v != null ? 'R$ '+Number(v).toLocaleString('pt-BR',{maximumFractionDigits:0}) : '—';
 
+// Escapa texto digitado pelo usuário antes de injetar em innerHTML — evita
+// que um título de negócio, nome de contato, nota etc. com HTML/script vire
+// XSS armazenado (executando na tela de quem visualizar o registro, inclusive
+// admins vendo dados de vendedores). Usar em TODO texto de usuário renderizado
+// via innerHTML/template literal. Elementos preenchidos via .value/.textContent
+// não precisam disso (o browser já trata como texto puro).
+function esc(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 // ═══════════════════════════════════════════════════════
 // AUTH
 // ═══════════════════════════════════════════════════════
@@ -1118,7 +1153,7 @@ async function mostrarSeletorClientes() {
   const grid = document.getElementById('cs-grid');
   grid.innerHTML = (emps||[]).map(e => `
     <div class="cs-card" onclick="selecionarCliente('${e.id}')">
-      <div class="cs-nome">${e.nome}</div>
+      <div class="cs-nome">${esc(e.nome)}</div>
       <div class="cs-sub">Clique para acessar</div>
     </div>`).join('') || '<div style="color:var(--dim);font-size:13px">Nenhum cliente cadastrado ainda.</div>';
   document.getElementById('cliente-screen').style.display = 'flex';
@@ -1449,7 +1484,7 @@ function renderDashboard() {
           return {label:op, v:ns.length};
         }).filter(d=>d.v>0);
         return `<div class="dash-card">
-          <div class="dash-card-title">${campo.nome}</div>
+          <div class="dash-card-title">${esc(campo.nome)}</div>
           ${svgPizza(dadosCampo)}
         </div>`;
       }).join('')}
@@ -1535,8 +1570,8 @@ function renderFiltrosKanban() {
   const temFiltro = Object.values(filtrosKanban).some(v=>v);
   wrap.innerHTML = camposSel.map(c=>`
     <select class="tselect" onchange="filtrosKanban['${c.id}']=this.value;renderView()">
-      <option value="">${c.nome}: Todos</option>
-      ${(c.opcoes||[]).map(op=>`<option value="${op}" ${filtrosKanban[c.id]===op?'selected':''}>${op}</option>`).join('')}
+      <option value="">${esc(c.nome)}: Todos</option>
+      ${(c.opcoes||[]).map(op=>`<option value="${esc(op)}" ${filtrosKanban[c.id]===op?'selected':''}>${esc(op)}</option>`).join('')}
     </select>`).join('')
     + (temFiltro ? `<button class="btn-sec" onclick="filtrosKanban={};renderView()" style="color:var(--danger);border-color:rgba(255,107,107,.3)">✕ Limpar</button>` : '');
 }
@@ -1618,9 +1653,9 @@ function renderKanban() {
           <div style="font-size:9px;color:var(--dim)">${diasEtapa}d nesta etapa</div>
           ${prioBadge}
         </div>
-        <div class="deal-title">${n.titulo}</div>
-        ${n.contato_empresa?`<div class="deal-empresa">${n.contato_empresa}</div>`:''}
-        ${n.contato_nome?`<div class="deal-contato">${n.contato_nome}${n.contato_telefone?` · <a href="https://wa.me/55${n.contato_telefone.replace(/\D/g,'')}" target="_blank" onclick="event.stopPropagation()" style="color:var(--green)">WhatsApp↗</a>`:''}</div>`:''}
+        <div class="deal-title">${esc(n.titulo)}</div>
+        ${n.contato_empresa?`<div class="deal-empresa">${esc(n.contato_empresa)}</div>`:''}
+        ${n.contato_nome?`<div class="deal-contato">${esc(n.contato_nome)}${n.contato_telefone?` · <a href="https://wa.me/55${n.contato_telefone.replace(/\D/g,'')}" target="_blank" onclick="event.stopPropagation()" style="color:var(--green)">WhatsApp↗</a>`:''}</div>`:''}
         ${ativIcone ? `<div style="margin:6px 0">${ativIcone}</div>` : ''}
         <div class="deal-footer">
           <div class="deal-value">${fR(n.valor_fechado||n.valor)}</div>
@@ -1636,7 +1671,7 @@ function renderKanban() {
       ondragleave="this.classList.remove('drag-over')"
       ondrop="soltar('${etapa.id}');this.classList.remove('drag-over')">
       <div class="col-header">
-        <div class="col-title">${etapa.nome}<span class="col-count">${ns.length}</span></div>
+        <div class="col-title">${esc(etapa.nome)}<span class="col-count">${ns.length}</span></div>
         <div class="col-total">${fR(tot)}</div>
       </div>
       ${cards}
@@ -1713,14 +1748,14 @@ function renderTabela() {
       baixa: {label:'Baixa', color:'var(--dim)',     bg:'rgba(200,195,255,.06)', border:'rgba(200,195,255,.18)'},
     }[prio];
     return `<tr onclick="abrirModalNegocio('${n.id}')" style="cursor:pointer">
-      <td class="td-name" style="white-space:nowrap">${n.titulo}</td>
-      <td style="white-space:nowrap">${n.contato_empresa||'—'}</td>
-      <td style="white-space:nowrap">${n.contato_nome||'—'}</td>
+      <td class="td-name" style="white-space:nowrap">${esc(n.titulo)}</td>
+      <td style="white-space:nowrap">${esc(n.contato_empresa)||'—'}</td>
+      <td style="white-space:nowrap">${esc(n.contato_nome)||'—'}</td>
       <td><span class="badge" style="background:rgba(123,47,255,.15);color:var(--ps);border:1px solid var(--border);white-space:nowrap">${etapa?.nome||'—'}</span></td>
       <td><span style="font-size:10px;font-weight:700;color:${prioCfgTabela.color};background:${prioCfgTabela.bg};border:1px solid ${prioCfgTabela.border};border-radius:4px;padding:2px 7px;white-space:nowrap">${prioCfgTabela.label}</span></td>
       <td style="white-space:nowrap">${fR(n.valor_fechado||n.valor)}</td>
       <td style="white-space:nowrap">${n.data_entrada ? new Date(n.data_entrada+'T12:00:00').toLocaleDateString('pt-BR') : '—'}</td>
-      ${camposCustom.map(c=>`<td style="white-space:nowrap">${cv[c.id]||'—'}</td>`).join('')}
+      ${camposCustom.map(c=>`<td style="white-space:nowrap">${esc(cv[c.id])||'—'}</td>`).join('')}
       <td><button class="icon-btn danger" onclick="event.stopPropagation();excluirNegRapido('${n.id}')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
       </button></td>
@@ -1767,13 +1802,13 @@ async function excluirNegRapido(id) {
 // ═══════════════════════════════════════════════════════
 function atualizarSelectEtapas() {
   const sel = document.getElementById('n-etapa');
-  sel.innerHTML = etapas.map(e=>`<option value="${e.id}">${e.nome}</option>`).join('');
+  sel.innerHTML = etapas.map(e=>`<option value="${e.id}">${esc(e.nome)}</option>`).join('');
 }
 
 function atualizarFiltroEtapas() {
   const sel = document.getElementById('pipe-filtro-etapa');
   sel.innerHTML = '<option value="">Todas as etapas</option>' +
-    etapas.map(e=>`<option value="${e.id}">${e.nome}</option>`).join('');
+    etapas.map(e=>`<option value="${e.id}">${esc(e.nome)}</option>`).join('');
 }
 
 // Popula o dropdown de Responsável. Admin/super_admin veem todos os
@@ -1784,7 +1819,7 @@ function atualizarSelectOwner() {
   const lista = (usuariosEmpresa && usuariosEmpresa.length)
     ? usuariosEmpresa
     : (perfil ? [{ id: perfil.id, nome: perfil.nome }] : []);
-  sel.innerHTML = '<option value="">—</option>' + lista.map(u=>`<option value="${u.id}">${u.nome}</option>`).join('');
+  sel.innerHTML = '<option value="">—</option>' + lista.map(u=>`<option value="${u.id}">${esc(u.nome)}</option>`).join('');
 }
 
 async function abrirModalNegocio(id) {
@@ -1841,16 +1876,16 @@ function renderCamposCustomModal(vals) {
     camposCustom.map(c => {
       const v = vals[c.id]||'';
       if (c.tipo==='selecao'&&c.opcoes?.length) {
-        return `<div class="field"><label>${c.nome}</label>
+        return `<div class="field"><label>${esc(c.nome)}</label>
           <select id="cc-${c.id}">
             <option value="">Selecionar…</option>
-            ${c.opcoes.map(o=>`<option value="${o}" ${v===o?'selected':''}>${o}</option>`).join('')}
+            ${c.opcoes.map(o=>`<option value="${esc(o)}" ${v===o?'selected':''}>${esc(o)}</option>`).join('')}
           </select></div>`;
       }
       if (c.tipo==='data') {
-        return `<div class="field"><label>${c.nome}</label><input id="cc-${c.id}" type="date" value="${v}"></div>`;
+        return `<div class="field"><label>${esc(c.nome)}</label><input id="cc-${c.id}" type="date" value="${esc(v)}"></div>`;
       }
-      return `<div class="field"><label>${c.nome}</label><input id="cc-${c.id}" type="text" value="${v}" placeholder="${c.nome}"></div>`;
+      return `<div class="field"><label>${esc(c.nome)}</label><input id="cc-${c.id}" type="text" value="${esc(v)}" placeholder="${esc(c.nome)}"></div>`;
     }).join('') + '</div>';
 }
 
@@ -1870,7 +1905,7 @@ async function carregarNotasNeg(negId) {
   lista.innerHTML = (data||[]).map(n=>`
     <div class="note-item">
       <div class="note-date">${new Date(n.criado_em).toLocaleDateString('pt-BR')}</div>
-      ${n.texto}
+      ${esc(n.texto)}
       <button class="note-del" onclick="delNota('${n.id}','${negId}')">×</button>
     </div>`).join('') || '<div style="font-size:12px;color:var(--dim)">Nenhuma nota ainda.</div>';
 }
@@ -1898,7 +1933,7 @@ async function carregarAtivsNeg(negId) {
     <div class="ativ-item">
       <input type="checkbox" class="ativ-check" ${a.concluida?'checked':''} onchange="toggleAtivNeg('${a.id}',this.checked,'${negId}')">
       <div class="ativ-body">
-        <div class="ativ-tt${a.concluida?' done':''}">${a.titulo}</div>
+        <div class="ativ-tt${a.concluida?' done':''}">${esc(a.titulo)}</div>
         <div class="ativ-dt${!a.concluida&&a.data<h?' overdue':''}">${new Date(a.data+'T12:00:00').toLocaleDateString('pt-BR')}</div>
       </div>
       <button class="ativ-del" onclick="delAtivNeg('${a.id}','${negId}')">×</button>
@@ -2002,10 +2037,10 @@ function renderAtividades() {
     <div class="ativ-item" style="margin-bottom:8px">
       <input type="checkbox" class="ativ-check" ${a.concluida?'checked':''} onchange="toggleAtivGlobal('${a.id}',this.checked)">
       <div class="ativ-body">
-        <div class="ativ-tt${a.concluida?' done':''}">${a.titulo}</div>
+        <div class="ativ-tt${a.concluida?' done':''}">${esc(a.titulo)}</div>
         <div class="ativ-dt${!a.concluida&&a.data<h?' overdue':''}">
           ${a.tipo} · ${new Date(a.data+'T12:00:00').toLocaleDateString('pt-BR')}
-          ${a.negocio?` · <span style="color:var(--cyan)">${a.negocio.titulo}</span>`:''}
+          ${a.negocio?` · <span style="color:var(--cyan)">${esc(a.negocio.titulo)}</span>`:''}
         </div>
       </div>
       <button class="icon-btn" onclick="abrirModalAtividade('${a.id}')">
@@ -2030,7 +2065,7 @@ async function abrirModalAtividade(id) {
   document.getElementById('ma-titulo').textContent = id ? 'Editar atividade' : 'Nova atividade';
   document.getElementById('a-id').value = id||'';
   const selN = document.getElementById('a-negocio');
-  selN.innerHTML = '<option value="">Nenhum</option>'+negocios.map(n=>`<option value="${n.id}">${n.titulo}</option>`).join('');
+  selN.innerHTML = '<option value="">Nenhum</option>'+negocios.map(n=>`<option value="${n.id}">${esc(n.titulo)}</option>`).join('');
   if (id) {
     const a = atividades.find(x=>x.id===id);
     if (!a) return;
@@ -2090,9 +2125,9 @@ function renderConfigEtapas() {
       <input
         class="tsearch"
         style="flex:1;padding:6px 10px;font-size:13px${protegida?';opacity:.6;cursor:not-allowed':''}"
-        value="${e.nome}"
+        value="${esc(e.nome)}"
         ${protegida
-          ? `readonly title="${e.nome} é uma etapa fixa do funil e não pode ser renomeada"`
+          ? `readonly title="${esc(e.nome)} é uma etapa fixa do funil e não pode ser renomeada"`
           : `onblur="editarEtapa('${e.id}','nome',this.value)" onkeydown="if(event.key==='Enter')this.blur()"`}
         placeholder="Nome da etapa">
       <input
@@ -2197,7 +2232,7 @@ async function excluirEtapa(id) {
     `A etapa "${etapa?.nome}" tem ${afetados.length} negócio${afetados.length>1?'s':''}. Escolha para qual etapa eles devem ser movidos antes da etapa ser excluída.`;
   const destino = document.getElementById('ee-destino');
   destino.innerHTML = '<option value="">Selecionar…</option>' +
-    etapasOrd.filter(e=>e.id!==id).map(e=>`<option value="${e.id}">${e.nome}</option>`).join('');
+    etapasOrd.filter(e=>e.id!==id).map(e=>`<option value="${e.id}">${esc(e.nome)}</option>`).join('');
   document.getElementById('ee-btn-cancelar').disabled = false;
   document.getElementById('ee-btn-confirmar').disabled = false;
   document.getElementById('ee-btn-confirmar').textContent = 'Mover e excluir etapa';
@@ -2247,7 +2282,7 @@ function renderConfigCampos() {
       <div class="opcoes-wrap" id="opcoes-${c.id}">
         ${(c.opcoes||[]).map((op,i) => `
           <span class="opcao-tag">
-            ${op}
+            ${esc(op)}
             <button onclick="removerOpcao('${c.id}',${i})" title="Remover">×</button>
           </span>`).join('')}
       </div>
@@ -2260,7 +2295,7 @@ function renderConfigCampos() {
     <div class="config-row" style="flex-direction:column;align-items:stretch;gap:6px;margin-bottom:10px">
       <div style="display:flex;align-items:center;gap:8px">
         <input class="tsearch" style="flex:1;padding:6px 10px;font-size:13px"
-          value="${c.nome}"
+          value="${esc(c.nome)}"
           onblur="editarCampoNome('${c.id}',this.value)"
           onkeydown="if(event.key==='Enter')this.blur()"
           placeholder="Nome do campo">
@@ -2826,7 +2861,7 @@ function svgBarH(dados, opts) {
         var color = colors[i % colors.length];
         var vl = d.vLabel || d.v;
         return '<div style="display:flex;align-items:center;gap:10px">'
-          + '<div style="width:110px;text-align:right;font-size:11px;color:rgba(200,195,255,.8);flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+d.label+'</div>'
+          + '<div style="width:110px;text-align:right;font-size:11px;color:rgba(200,195,255,.8);flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(d.label)+'</div>'
           + '<div style="flex:1;background:rgba(255,255,255,.05);border-radius:4px;height:22px;position:relative;overflow:hidden">'
           + '<div style="width:'+pct+'%;height:100%;background:'+color+';opacity:.85;border-radius:4px;transition:width .4s"></div>'
           + '</div>'
@@ -2847,7 +2882,7 @@ function svgBarV(dados) {
         return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;position:relative">'
           + '<div style="font-size:9px;font-weight:700;color:rgba(240,238,255,.85);margin-bottom:3px;white-space:nowrap">'+d.vLabel+'</div>'
           + '<div style="width:100%;height:'+pct+'px;background:linear-gradient(180deg,rgba(123,47,255,.9),rgba(123,47,255,.4));border-radius:3px 3px 0 0;min-height:4px"></div>'
-          + '<div style="position:absolute;bottom:-18px;font-size:9px;color:var(--dim);white-space:nowrap">'+d.label+'</div>'
+          + '<div style="position:absolute;bottom:-18px;font-size:9px;color:var(--dim);white-space:nowrap">'+esc(d.label)+'</div>'
           + '</div>';
       }).join('')
     + '</div>';
@@ -2869,7 +2904,7 @@ function svgPizza(dados) {
           + '<div style="display:flex;justify-content:space-between;margin-bottom:4px">'
           + '<div style="display:flex;align-items:center;gap:7px">'
           + '<span style="width:8px;height:8px;border-radius:2px;background:'+color+';display:inline-block;flex-shrink:0"></span>'
-          + '<span style="font-size:12px;color:var(--muted)">'+d.label+'</span>'
+          + '<span style="font-size:12px;color:var(--muted)">'+esc(d.label)+'</span>'
           + '</div>'
           + '<span style="font-size:12px;font-weight:700;color:var(--white)">'+d.v+' <span style="color:var(--dim);font-weight:400">('+pct+'%)</span></span>'
           + '</div>'
@@ -2925,8 +2960,8 @@ function renderFiltrosCustom() {
   const temFiltro = Object.values(filtrosCustom).some(v=>v);
   wrap.innerHTML = camposSel.map(c=>`
     <select class="tselect" onchange="filtrosCustom['${c.id}']=this.value;renderTabela()">
-      <option value="">${c.nome}: Todos</option>
-      ${(c.opcoes||[]).map(op=>`<option value="${op}" ${filtrosCustom[c.id]===op?'selected':''}>${op}</option>`).join('')}
+      <option value="">${esc(c.nome)}: Todos</option>
+      ${(c.opcoes||[]).map(op=>`<option value="${esc(op)}" ${filtrosCustom[c.id]===op?'selected':''}>${esc(op)}</option>`).join('')}
     </select>`).join('') +
     (temFiltro ? `<button class="btn-sec" onclick="limparFiltrosTabela()" style="color:var(--danger);border-color:rgba(255,107,107,.3)">✕ Limpar filtros</button>` : '');
 }
@@ -3112,7 +3147,7 @@ async function salvarNovaSenha() {
   var err       = document.getElementById('trocar-err');
   var btn       = document.getElementById('trocar-btn');
   err.style.display = 'none';
-  if (nova.length < 6) { err.textContent = 'A senha deve ter pelo menos 6 caracteres.'; err.style.display = 'block'; return; }
+  if (nova.length < 8) { err.textContent = 'A senha deve ter pelo menos 8 caracteres.'; err.style.display = 'block'; return; }
   if (nova !== confirmar) { err.textContent = 'As senhas não coincidem.'; err.style.display = 'block'; return; }
   btn.disabled = true; btn.textContent = 'Salvando…';
   const { error } = await sb.auth.updateUser({ password: nova });
@@ -3157,7 +3192,7 @@ async function salvarSenhaApp() {
   var err       = document.getElementById('ts-err');
   var btn       = document.getElementById('ts-btn');
   err.style.display = 'none';
-  if (nova.length < 6) { err.textContent = 'Mínimo 6 caracteres.'; err.style.display = 'block'; return; }
+  if (nova.length < 8) { err.textContent = 'Mínimo 8 caracteres.'; err.style.display = 'block'; return; }
   if (nova !== confirmar) { err.textContent = 'As senhas não coincidem.'; err.style.display = 'block'; return; }
   btn.disabled = true; btn.textContent = 'Salvando…';
   const { error } = await sb.auth.updateUser({ password: nova });
@@ -3639,21 +3674,21 @@ function renderInicio(diag) {
     <div class="alerta-card p-${a.prioridade}">
       <div class="alerta-icone">${a.icone}</div>
       <div class="alerta-corpo">
-        <div class="alerta-desc">${a.desc}</div>
-        <div class="alerta-impacto">${a.impacto}</div>
+        <div class="alerta-desc">${esc(a.desc)}</div>
+        <div class="alerta-impacto">${esc(a.impacto)}</div>
       </div>
-      ${a.acaoLabel ? `<div class="alerta-acao"><button class="btn-sec" onclick='irParaAlerta(${JSON.stringify(a.acaoFiltro)})'>${a.acaoLabel}</button></div>` : ''}
+      ${a.acaoLabel ? `<div class="alerta-acao"><button class="btn-sec" onclick='irParaAlerta(${JSON.stringify(a.acaoFiltro)})'>${esc(a.acaoLabel)}</button></div>` : ''}
     </div>`).join('');
 
   // Oportunidades
   const elOp = document.getElementById('home-oportunidades');
   elOp.innerHTML = diag.oportunidades.length
-    ? diag.oportunidades.map(o => `<div class="oport-card">${o}</div>`).join('')
+    ? diag.oportunidades.map(o => `<div class="oport-card">${esc(o)}</div>`).join('')
     : '<div class="home-empty">Ainda estamos reunindo dados suficientes para identificar oportunidades. Volte em alguns dias.</div>';
 
   // Diagnóstico comercial
-  document.getElementById('diag-melhorou').innerHTML = diag.diagnostico.melhorou.map(t=>`<div class="diag-item">${t}</div>`).join('');
-  document.getElementById('diag-piorou').innerHTML   = diag.diagnostico.piorou.map(t=>`<div class="diag-item">${t}</div>`).join('');
+  document.getElementById('diag-melhorou').innerHTML = diag.diagnostico.melhorou.map(t=>`<div class="diag-item">${esc(t)}</div>`).join('');
+  document.getElementById('diag-piorou').innerHTML   = diag.diagnostico.piorou.map(t=>`<div class="diag-item">${esc(t)}</div>`).join('');
   document.getElementById('diag-recom').innerHTML    = diag.diagnostico.recomendacoes.map(t=>`<div class="diag-item">${t}</div>`).join('');
 
   // Próximas atividades (5 primeiras pendentes, ordenadas por data)
@@ -3670,7 +3705,7 @@ function renderInicio(diag) {
     else if (a.data === hStr) quando = 'Hoje';
     else if (a.data === amanhaStr) quando = 'Amanhã';
     return `<div class="home-ativ-item">
-      <div><span class="home-ativ-quando">${quando}</span><span class="home-ativ-tt">${a.titulo}</span>
+      <div><span class="home-ativ-quando">${quando}</span><span class="home-ativ-tt">${esc(a.titulo)}</span>
       <div class="home-ativ-neg">${a.negocio?.titulo||''}</div></div>
       ${a.negocio_id ? `<button class="btn-sec" onclick="abrirModalNegocio('${a.negocio_id}')">Abrir negócio</button>` : ''}
     </div>`;
@@ -3687,7 +3722,7 @@ iniciar();
 <div class="modal-overlay" id="modal-trocar-senha" onclick="if(event.target===this)fecharModal('trocar-senha')">
   <div class="modal" style="width:420px">
     <div class="modal-title">Alterar senha</div>
-    <div class="field"><label>Nova senha *</label><input id="ts-nova" type="password" placeholder="Mínimo 6 caracteres"></div>
+    <div class="field"><label>Nova senha *</label><input id="ts-nova" type="password" placeholder="Mínimo 8 caracteres"></div>
     <div class="field"><label>Confirmar senha *</label><input id="ts-confirmar" type="password" placeholder="Repita a senha"></div>
     <div class="lerr" id="ts-err" style="margin-bottom:8px"></div>
     <div class="modal-actions">
