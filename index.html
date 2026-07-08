@@ -888,7 +888,7 @@ const LIMITE_OPCOES    = 10;  // opções por campo do tipo seleção
 // Sobe este número sempre que a estrutura/lógica do diagnóstico da Home mudar.
 // Isso invalida automaticamente qualquer cache salvo com uma versão antiga
 // em diagnostico_diario, sem depender de apagar linhas manualmente no Supabase.
-const DIAG_VERSION = 2;
+const DIAG_VERSION = 3;
 
 // ═══════════════════════════════════════════════════════
 // ESTADO
@@ -969,17 +969,36 @@ async function posLogin(user) {
   document.getElementById('login-screen').style.display = 'none';
 
   if (perfil?.papel === 'super_admin') {
+    // Se o super_admin já tinha uma empresa aberta antes de recarregar a
+    // página, volta direto pra ela em vez de sempre cair na tela de
+    // seleção de cliente — sem isso, um F5 durante o trabalho te jogava
+    // pra fora da empresa toda vez.
+    const empSalva = localStorage.getItem('fost_empresa_id');
+    if (empSalva) {
+      const { data: emp } = await sb.from('empresas').select('*').eq('id', empSalva).single();
+      if (emp) { await selecionarCliente(emp.id, false); return; }
+      localStorage.removeItem('fost_empresa_id'); // empresa não existe mais
+    }
     await mostrarSeletorClientes();
   } else {
     empresaAtual = { id: perfil.empresa_id };
     const { data: emp } = await sb.from('empresas').select('*').eq('id', perfil.empresa_id).single();
     if (emp) empresaAtual = emp;
     await abrirApp();
+    // Restaura a aba em que a pessoa estava antes do refresh — exceto
+    // Configurações pra quem é vendedor, já que essa aba fica escondida
+    // pra esse papel (o botão some, mas sem essa checagem o conteúdo
+    // continuava acessível via restauração, ficando "orfão" sem nav ativa).
+    const tabSalva = localStorage.getItem('fost_tab_ativo');
+    const tabBloqueada = perfil?.papel === 'vendedor' && tabSalva === 'config';
+    if (tabSalva && !tabBloqueada && document.getElementById('sec-'+tabSalva)) switchTab(tabSalva);
   }
 }
 
 async function fazerLogout() {
   await sb.auth.signOut();
+  localStorage.removeItem('fost_empresa_id');
+  localStorage.removeItem('fost_tab_ativo');
   location.reload();
 }
 
@@ -999,25 +1018,36 @@ async function mostrarSeletorClientes() {
   document.getElementById('cliente-screen').style.display = 'flex';
 }
 
-async function selecionarCliente(empId) {
+async function selecionarCliente(empId, manual = true) {
   const { data } = await sb.from('empresas').select('*').eq('id', empId).single();
   empresaAtual = data;
+  localStorage.setItem('fost_empresa_id', empId);
   document.getElementById('cliente-screen').style.display = 'none';
   document.getElementById('nav-cliente-nome').textContent = empresaAtual.nome;
   document.getElementById('nav-cliente-nome').style.display = '';
-  // Evita que filtros ativados numa empresa "vazem" para a próxima ao trocar
-  // de cliente (ex: o filtro "sem responsável" acionado por um alerta da Home).
-  filtroPipeSemResponsavel = false;
-  filtrosKanban = {};
-  const elBusca = document.getElementById('pipe-busca'); if (elBusca) elBusca.value = '';
-  const elEstag = document.getElementById('pipe-filtro-estagnado'); if (elEstag) elEstag.value = '';
-  const elEtapaF = document.getElementById('pipe-filtro-etapa'); if (elEtapaF) elEtapaF.value = '';
-  switchTab('inicio');
+  if (manual) {
+    // Só reseta filtros/aba quando é uma troca de cliente DE VERDADE (clique
+    // manual) — evita vazamento de filtro entre empresas (ver nota abaixo).
+    // No auto-restore após um F5, queremos voltar exatamente onde a pessoa
+    // estava, não forçar de volta pro Início.
+    filtroPipeSemResponsavel = false;
+    filtrosKanban = {};
+    const elBusca = document.getElementById('pipe-busca'); if (elBusca) elBusca.value = '';
+    const elEstag = document.getElementById('pipe-filtro-estagnado'); if (elEstag) elEstag.value = '';
+    const elEtapaF = document.getElementById('pipe-filtro-etapa'); if (elEtapaF) elEtapaF.value = '';
+    switchTab('inicio');
+  }
   await abrirApp();
+  if (!manual) {
+    // Restaura a aba em que a pessoa estava antes do refresh
+    const tabSalva = localStorage.getItem('fost_tab_ativo');
+    if (tabSalva && document.getElementById('sec-'+tabSalva)) switchTab(tabSalva);
+  }
 }
 
 function voltarSeletor() {
   if (perfil?.papel !== 'super_admin') return;
+  localStorage.removeItem('fost_empresa_id');
   document.getElementById('app').style.display = 'none';
   mostrarSeletorClientes();
 }
@@ -1548,9 +1578,10 @@ async function excluirNegRapido(id) {
   if (!confirm('Excluir este negócio?')) return;
   await sb.from('notas').delete().eq('negocio_id', id);
   await sb.from('atividades').update({negocio_id:null}).eq('negocio_id', id);
-  await sb.from('negocios').delete().eq('id', id);
+  const { error } = await sb.from('negocios').delete().eq('id', id);
+  if (error) return alert('Não foi possível excluir: ' + error.message);
   await carregarNegocios(); await carregarAtividades();
-  renderView(); atualizarKPIs(); renderDashboard(); renderAtividades();
+  renderView(); atualizarKPIs(); renderDashboard(); renderAtividades(); renderCalendario();
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1669,13 +1700,15 @@ async function carregarNotasNeg(negId) {
 async function addNota() {
   const negId = document.getElementById('n-id').value; if (!negId) return;
   const texto = document.getElementById('n-nota-nova').value.trim(); if (!texto) return;
-  await sb.from('notas').insert({ negocio_id:negId, empresa_id:empresaAtual.id, texto });
+  const { error } = await sb.from('notas').insert({ negocio_id:negId, empresa_id:empresaAtual.id, texto });
+  if (error) return alert('Não foi possível salvar a nota: ' + error.message);
   document.getElementById('n-nota-nova').value='';
   await carregarNotasNeg(negId);
 }
 
 async function delNota(notaId, negId) {
-  await sb.from('notas').delete().eq('id', notaId);
+  const { error } = await sb.from('notas').delete().eq('id', notaId);
+  if (error) return alert('Não foi possível excluir a nota: ' + error.message);
   await carregarNotasNeg(negId);
 }
 
@@ -1698,23 +1731,26 @@ async function addAtivNeg() {
   const negId = document.getElementById('n-id').value; if (!negId) return;
   const titulo = document.getElementById('n-ativ-nova').value.trim(); if (!titulo) return;
   const data   = document.getElementById('n-ativ-data').value || hoje();
-  await sb.from('atividades').insert({ negocio_id:negId, empresa_id:empresaAtual.id, titulo, data, tipo:'outro' });
+  const { error } = await sb.from('atividades').insert({ negocio_id:negId, empresa_id:empresaAtual.id, titulo, data, tipo:'outro' });
+  if (error) return alert('Não foi possível adicionar a atividade: ' + error.message);
   document.getElementById('n-ativ-nova').value='';
   document.getElementById('n-ativ-data').value='';
   await carregarAtivsNeg(negId);
-  await carregarAtividades(); renderAtividades();
+  await carregarAtividades(); renderAtividades(); renderCalendario();
 }
 
 async function toggleAtivNeg(id, concluida, negId) {
-  await sb.from('atividades').update({concluida}).eq('id',id);
+  const { error } = await sb.from('atividades').update({concluida}).eq('id',id);
+  if (error) { alert('Não foi possível atualizar a atividade: ' + error.message); return; }
   await carregarAtivsNeg(negId);
-  await carregarAtividades(); renderAtividades();
+  await carregarAtividades(); renderAtividades(); renderCalendario();
 }
 
 async function delAtivNeg(id, negId) {
-  await sb.from('atividades').delete().eq('id',id);
+  const { error } = await sb.from('atividades').delete().eq('id',id);
+  if (error) { alert('Não foi possível excluir a atividade: ' + error.message); return; }
   await carregarAtivsNeg(negId);
-  await carregarAtividades(); renderAtividades();
+  await carregarAtividades(); renderAtividades(); renderCalendario();
 }
 
 async function salvarNegocio() {
@@ -1766,10 +1802,11 @@ async function excluirNegocio() {
   if (!id || !confirm('Excluir este negócio?')) return;
   await sb.from('notas').delete().eq('negocio_id',id);
   await sb.from('atividades').update({negocio_id:null}).eq('negocio_id',id);
-  await sb.from('negocios').delete().eq('id',id);
+  const { error } = await sb.from('negocios').delete().eq('id',id);
+  if (error) return alert('Não foi possível excluir: ' + error.message);
   fecharModal('negocio');
   await carregarNegocios(); await carregarAtividades();
-  renderView(); atualizarKPIs(); renderDashboard(); renderAtividades();
+  renderView(); atualizarKPIs(); renderDashboard(); renderAtividades(); renderCalendario();
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1844,10 +1881,12 @@ async function salvarAtividade() {
     observacoes: document.getElementById('a-obs').value.trim()||null,
   };
   if (!dados.titulo||!dados.data) return alert('Preencha título e data.');
-  if (id) await sb.from('atividades').update(dados).eq('id',id);
-  else    await sb.from('atividades').insert({...dados, empresa_id:empresaAtual.id});
+  const { error } = id
+    ? await sb.from('atividades').update(dados).eq('id',id)
+    : await sb.from('atividades').insert({...dados, empresa_id:empresaAtual.id});
+  if (error) return alert('Não foi possível salvar a atividade: ' + error.message);
   fecharModal('atividade');
-  await carregarAtividades(); renderAtividades();
+  await carregarAtividades(); renderAtividades(); renderCalendario();
 }
 
 // ═══════════════════════════════════════════════════════
@@ -2203,6 +2242,7 @@ function switchTab(nome) {
   document.querySelectorAll('.nav-tab').forEach(b=>b.classList.remove('active'));
   document.getElementById('sec-'+nome).classList.add('active');
   document.getElementById('tab-btn-'+nome).classList.add('active');
+  localStorage.setItem('fost_tab_ativo', nome);
 }
 
 function fecharModal(nome) {
