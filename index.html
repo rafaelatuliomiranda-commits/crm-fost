@@ -927,8 +927,8 @@ tbody tr:hover td{background:rgba(123,47,255,.06);}
       <select id="ee-destino"></select>
     </div>
     <div class="modal-actions">
-      <button class="btn-cancel" onclick="fecharModal('excluir-etapa')">Cancelar</button>
-      <button class="btn-danger" onclick="confirmarExclusaoEtapa()">Mover e excluir etapa</button>
+      <button class="btn-cancel" id="ee-btn-cancelar" onclick="fecharModal('excluir-etapa')">Cancelar</button>
+      <button class="btn-danger" id="ee-btn-confirmar" onclick="confirmarExclusaoEtapa()">Mover e excluir etapa</button>
     </div>
   </div>
 </div>
@@ -938,10 +938,11 @@ tbody tr:hover td{background:rgba(123,47,255,.06);}
   <div class="modal" style="width:460px">
     <div class="modal-title">Campo com dados preenchidos</div>
     <div id="ec-texto" style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:14px"></div>
+    <div id="ec-status" style="display:none;font-size:12px;color:var(--cyan);margin-bottom:10px"></div>
     <div class="modal-actions" style="flex-wrap:wrap;gap:8px">
-      <button class="btn-cancel" onclick="fecharModal('excluir-campo')">Cancelar</button>
-      <button class="btn-sec" onclick="confirmarExclusaoCampo(true)">Salvar valores como nota e excluir</button>
-      <button class="btn-danger" onclick="confirmarExclusaoCampo(false)">Excluir e descartar dados</button>
+      <button class="btn-cancel" id="ec-btn-cancelar" onclick="fecharModal('excluir-campo')">Cancelar</button>
+      <button class="btn-sec" id="ec-btn-preservar" onclick="confirmarExclusaoCampo(true)">Salvar valores como nota e excluir</button>
+      <button class="btn-danger" id="ec-btn-descartar" onclick="confirmarExclusaoCampo(false)">Excluir e descartar dados</button>
     </div>
   </div>
 </div>
@@ -1140,6 +1141,7 @@ async function selecionarCliente(empId, manual = true) {
     const elBusca = document.getElementById('pipe-busca'); if (elBusca) elBusca.value = '';
     const elEstag = document.getElementById('pipe-filtro-estagnado'); if (elEstag) elEstag.value = '';
     const elEtapaF = document.getElementById('pipe-filtro-etapa'); if (elEtapaF) elEtapaF.value = '';
+    const elPrioF = document.getElementById('pipe-filtro-prioridade'); if (elPrioF) elPrioF.value = '';
     switchTab('inicio');
   }
   await abrirApp();
@@ -2194,7 +2196,11 @@ async function excluirEtapa(id) {
   document.getElementById('ee-texto').textContent =
     `A etapa "${etapa?.nome}" tem ${afetados.length} negócio${afetados.length>1?'s':''}. Escolha para qual etapa eles devem ser movidos antes da etapa ser excluída.`;
   const destino = document.getElementById('ee-destino');
-  destino.innerHTML = etapasOrd.filter(e=>e.id!==id).map(e=>`<option value="${e.id}">${e.nome}</option>`).join('');
+  destino.innerHTML = '<option value="">Selecionar…</option>' +
+    etapasOrd.filter(e=>e.id!==id).map(e=>`<option value="${e.id}">${e.nome}</option>`).join('');
+  document.getElementById('ee-btn-cancelar').disabled = false;
+  document.getElementById('ee-btn-confirmar').disabled = false;
+  document.getElementById('ee-btn-confirmar').textContent = 'Mover e excluir etapa';
   document.getElementById('modal-excluir-etapa').classList.add('open');
 }
 
@@ -2204,6 +2210,11 @@ async function confirmarExclusaoEtapa() {
   const destinoId = document.getElementById('ee-destino').value;
   if (!destinoId) return alert('Escolha uma etapa de destino.');
 
+  const btnConfirmar = document.getElementById('ee-btn-confirmar');
+  const btnCancelar  = document.getElementById('ee-btn-cancelar');
+  btnConfirmar.disabled = true; btnCancelar.disabled = true;
+  btnConfirmar.textContent = 'Movendo negócios...';
+
   const { idsGanho, idsPerdido } = limitesEtapas();
   const update = { etapa_id: destinoId, ultima_atualizacao: new Date().toISOString() };
   // Se o destino for Ganho ou Perdido, preenche as datas correspondentes —
@@ -2212,7 +2223,12 @@ async function confirmarExclusaoEtapa() {
   if (idsPerdido.includes(destinoId)) update.data_perda = hoje();
 
   const { error: eMove } = await sb.from('negocios').update(update).eq('etapa_id', id);
-  if (eMove) { alert('Não foi possível mover os negócios: ' + eMove.message); return; }
+  if (eMove) {
+    alert('Não foi possível mover os negócios: ' + eMove.message);
+    btnConfirmar.disabled = false; btnCancelar.disabled = false;
+    btnConfirmar.textContent = 'Mover e excluir etapa';
+    return;
+  }
 
   const { error: eDel } = await sb.from('etapas').delete().eq('id', id);
   if (eDel) { alert('Negócios movidos, mas não foi possível excluir a etapa: ' + eDel.message); }
@@ -2346,6 +2362,9 @@ async function excluirCampo(id) {
   campoParaExcluirId = id;
   document.getElementById('ec-texto').textContent =
     `O campo "${campo?.nome}" está preenchido em ${afetados.length} negócio${afetados.length>1?'s':''}. Como deseja tratar essas informações antes de excluir o campo?`;
+  const ecStatus = document.getElementById('ec-status');
+  ecStatus.style.display = 'none'; ecStatus.style.color = 'var(--cyan)';
+  ['ec-btn-cancelar','ec-btn-preservar','ec-btn-descartar'].forEach(bid=>document.getElementById(bid).disabled=false);
   document.getElementById('modal-excluir-campo').classList.add('open');
 }
 
@@ -2358,23 +2377,41 @@ async function confirmarExclusaoCampo(preservarComoNota) {
     return v !== undefined && v !== null && v !== '';
   });
 
-  if (preservarComoNota) {
+  // Evita duplo clique disparar duas exclusões/gravações em paralelo
+  const btns = ['ec-btn-cancelar','ec-btn-preservar','ec-btn-descartar'].map(bid=>document.getElementById(bid));
+  btns.forEach(b=>b.disabled=true);
+  const status = document.getElementById('ec-status');
+
+  if (preservarComoNota && afetados.length) {
     // Grava o valor antigo como nota em cada negócio afetado, pra não perder
     // a informação quando o campo (e o histórico dele) deixar de existir.
-    for (const n of afetados) {
-      const valor = (n.campos_valores||{})[id];
-      await sb.from('notas').insert({
-        negocio_id: n.id,
-        empresa_id: empresaAtual.id,
-        texto: `[Campo "${campo?.nome}" excluído] Valor anterior: ${valor}`,
-      });
+    // Inserido em lotes (não um insert por negócio) pra não travar a UI
+    // nem gerar centenas de chamadas sequenciais com o pipeline no limite.
+    status.style.display = '';
+    const notas = afetados.map(n => ({
+      negocio_id: n.id,
+      empresa_id: empresaAtual.id,
+      texto: `[Campo "${campo?.nome}" excluído] Valor anterior: ${(n.campos_valores||{})[id]}`,
+    }));
+    const BATCH = 50;
+    for (let i = 0; i < notas.length; i += BATCH) {
+      status.textContent = `Salvando notas ${i+1}–${Math.min(i+BATCH, notas.length)} de ${notas.length}...`;
+      const { error } = await sb.from('notas').insert(notas.slice(i, i+BATCH));
+      if (error) {
+        status.style.color = 'var(--danger)';
+        status.textContent = 'Erro ao salvar notas: ' + error.message + ' — o campo NÃO foi excluído.';
+        btns.forEach(b=>b.disabled=false);
+        return;
+      }
     }
   }
 
   const { error } = await sb.from('campos_custom').delete().eq('id',id);
-  if (error) { alert('Não foi possível excluir o campo: ' + error.message); return; }
+  if (error) { alert('Não foi possível excluir o campo: ' + error.message); btns.forEach(b=>b.disabled=false); return; }
 
   campoParaExcluirId = null;
+  status.style.display = 'none'; status.style.color = 'var(--cyan)';
+  btns.forEach(b=>b.disabled=false);
   fecharModal('excluir-campo');
   await carregarCampos();
   renderConfigCampos(); renderView(); renderDashboard();
