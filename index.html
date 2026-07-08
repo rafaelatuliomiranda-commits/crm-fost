@@ -764,6 +764,27 @@ tbody tr:hover td{background:rgba(123,47,255,.06);}
         </div>
       </div>
 
+      <!-- Import/Export dentro das configurações -->
+      <div class="config-card" style="margin-bottom:14px">
+        <div class="config-card-title">Importar / Exportar</div>
+        <div class="ie-grid" style="margin-bottom:12px">
+          <div class="ie-card">
+            <div class="ie-title">Exportar</div>
+            <button class="btn-add" onclick="exportarCSV('negocios')">Exportar Negócios CSV</button>
+          </div>
+          <div class="ie-card">
+            <div class="ie-title">Importar</div>
+            <button class="btn-add" onclick="document.getElementById('file-imp').click()">Importar Negócios CSV</button>
+            <input type="file" id="file-imp" accept=".csv" style="display:none" onchange="importarCSV(event)">
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--dim);line-height:1.8">
+          <strong style="color:var(--muted)">Formato esperado:</strong><br>
+          <code style="font-size:10px">titulo, contato_nome, contato_empresa, contato_telefone, contato_email, etapa, valor, valor_fechado, data_fechamento, motivo_perda, data_perda, origem</code><br>
+          <span style="color:var(--dim)">+ uma coluna para cada campo personalizado (pelo nome exato dele). "etapa" deve bater com o nome de uma etapa existente — se não bater ou vier vazia, o negócio entra na primeira etapa do funil.</span>
+        </div>
+      </div>
+
       <div class="config-card" id="card-dados-teste" style="border:1px solid rgba(251,191,36,.25);background:rgba(251,191,36,.04);display:none">
         <div class="config-card-title" style="color:var(--yellow)">Dados de teste</div>
         <div style="font-size:12px;color:var(--dim);margin-bottom:14px;line-height:1.6">
@@ -773,26 +794,6 @@ tbody tr:hover td{background:rgba(123,47,255,.06);}
         <button class="btn-add" style="background:linear-gradient(135deg,#92400e,#b45309)" onclick="carregarDadosTeste()">
           ⚡ Carregar 100 negócios de teste
         </button>
-      </div>
-    </div>
-
-    <!-- Import/Export dentro das configurações -->
-    <div class="config-card" style="margin-top:14px">
-      <div class="config-card-title">Importar / Exportar</div>
-      <div class="ie-grid" style="margin-bottom:12px">
-        <div class="ie-card">
-          <div class="ie-title">Exportar</div>
-          <button class="btn-add" onclick="exportarCSV('negocios')">Exportar Negócios CSV</button>
-        </div>
-        <div class="ie-card">
-          <div class="ie-title">Importar</div>
-          <button class="btn-add" onclick="document.getElementById('file-imp').click()">Importar Negócios CSV</button>
-          <input type="file" id="file-imp" accept=".csv" style="display:none" onchange="importarCSV(event)">
-        </div>
-      </div>
-      <div style="font-size:11px;color:var(--dim);line-height:1.8">
-        <strong style="color:var(--muted)">Formato esperado:</strong><br>
-        <code style="font-size:10px">titulo, contato_nome, contato_empresa, contato_telefone, etapa, valor, origem, proximo_passo</code>
       </div>
     </div>
   </div>
@@ -813,7 +814,7 @@ tbody tr:hover td{background:rgba(123,47,255,.06);}
       <div class="field"><label>Etapa</label><select id="n-etapa"></select></div>
     </div>
     <div class="field-row">
-      <div class="field"><label>Valor previsto (R$)</label><input id="n-valor" type="number" min="0" placeholder="0"></div>
+      <div class="field"><label>Receita prevista (R$)</label><input id="n-valor" type="number" min="0" placeholder="0"></div>
       <div class="field"><label>Origem</label>
         <select id="n-origem">
           <option value="">Selecionar…</option>
@@ -822,26 +823,28 @@ tbody tr:hover td{background:rgba(123,47,255,.06);}
         </select>
       </div>
     </div>
-    <div class="field-row">
-      <div class="field"><label>Próximo passo</label><input id="n-proximo" placeholder="O que fazer agora?"></div>
-      <div class="field"><label>Responsável</label><select id="n-owner"><option value="">—</option></select></div>
-    </div>
+    <div class="field"><label>Responsável</label><select id="n-owner"><option value="">—</option></select></div>
 
     <div id="n-ganho-wrap" style="display:none">
       <div class="modal-sep"></div>
       <div class="modal-sec">Fechamento</div>
       <div class="field-row">
-        <div class="field"><label>Valor fechado (R$)</label><input id="n-vfechado" type="number" min="0"></div>
-        <div class="field"><label>Data fechamento</label><input id="n-dfechamento" type="date"></div>
+        <div class="field"><label>Receita fechada (R$)</label><input id="n-vfechado" type="number" min="0"></div>
+        <div class="field"><label>Data de fechamento</label><input id="n-dfechamento" type="date"></div>
       </div>
     </div>
     <div id="n-perdido-wrap" style="display:none">
-      <div class="field"><label>Motivo da perda</label>
-        <select id="n-motivo">
-          <option value="">Selecionar…</option>
-          <option>Preço</option><option>Concorrente</option><option>Prazo</option>
-          <option>Sem budget</option><option>Sem decisão</option><option>Produto não atende</option><option>Outro</option>
-        </select>
+      <div class="modal-sep"></div>
+      <div class="modal-sec">Perda</div>
+      <div class="field-row">
+        <div class="field"><label>Motivo da perda</label>
+          <select id="n-motivo">
+            <option value="">Selecionar…</option>
+            <option>Preço</option><option>Concorrente</option><option>Prazo</option>
+            <option>Sem Budget</option><option>Não é o decisor</option><option>Produto não atende</option><option>Outros</option>
+          </select>
+        </div>
+        <div class="field"><label>Data da perda</label><input id="n-dperda" type="date"></div>
       </div>
     </div>
 
@@ -953,6 +956,10 @@ const LIMITE_OPCOES    = 10;  // opções por campo do tipo seleção
 // Isso invalida automaticamente qualquer cache salvo com uma versão antiga
 // em diagnostico_diario, sem depender de apagar linhas manualmente no Supabase.
 const DIAG_VERSION = 3;
+
+// Empresa de testes da fost — só nela o botão "Dados de teste" aparece,
+// mesmo para o super_admin. Em qualquer outro cliente, fica escondido.
+const EMPRESA_TESTE_ID = '11111111-1111-1111-1111-111111111111';
 
 // ═══════════════════════════════════════════════════════
 // ESTADO
@@ -1153,11 +1160,11 @@ async function carregarTudo() {
   }
 
   try {
-    // Card de Dados de teste — EXCLUSIVO do super_admin (fost). Um admin
-    // cliente não pode ver isso, ou corre o risco de poluir os próprios
-    // dados reais com 100 negócios falsos por engano.
+    // Card de Dados de teste — só aparece na Empresa Teste da fost, mesmo
+    // logado como super_admin. Em qualquer cliente real, mesmo o
+    // super_admin não vê esse botão — evita poluir dados reais por engano.
     const elSeed = document.getElementById('card-dados-teste');
-    if (elSeed) elSeed.style.display = (perfil?.papel === 'super_admin') ? '' : 'none';
+    if (elSeed) elSeed.style.display = (perfil?.papel === 'super_admin' && empresaAtual?.id === EMPRESA_TESTE_ID) ? '' : 'none';
   } catch (e) {
     console.error('Erro ao configurar card de dados de teste:', e);
   }
@@ -1348,7 +1355,7 @@ function renderDashboard() {
 
   var graficoMensal = dadosMesR.length >= 2 ? (
     '<div class="dash-metricas-wrap" style="grid-column:1/-1">'
-    + '<div class="dash-metricas-titulo">Métricas que importam — Evolução mensal</div>'
+    + '<div class="dash-metricas-titulo">Receita fechada — Evolução mensal</div>'
     + barrasHtml(dadosMesR, mesAtualLabel)
     + '<div class="dash-metricas-kpis">'
     + '<div><div class="dash-mkpi-label">Receita '+mesAtualLabel+'</div><div class="dash-mkpi-val cyan">'+fR(recAtual)+'</div></div>'
@@ -1564,7 +1571,7 @@ function renderTabela() {
     </div>`).join('');
 
   // Cabeçalho
-  const colsFixas = ['Negócio','Empresa','Contato','Etapa','Valor','Próx. passo','Data entrada'];
+  const colsFixas = ['Negócio','Empresa','Contato','Etapa','Receita','Data entrada'];
   const colsCustom = camposCustom.map(c=>c.nome);
   const allCols = [...colsFixas, ...colsCustom, ''];
   const head = document.getElementById('tabela-neg-head');
@@ -1579,10 +1586,9 @@ function renderTabela() {
       else if (sortCol===2) { va=a.contato_nome||''; vb=b.contato_nome||''; }
       else if (sortCol===3) { va=etapas.find(e=>e.id===a.etapa_id)?.nome||''; vb=etapas.find(e=>e.id===b.etapa_id)?.nome||''; }
       else if (sortCol===4) { va=a.valor||0; vb=b.valor||0; }
-      else if (sortCol===5) { va=a.proximo_passo||''; vb=b.proximo_passo||''; }
-      else if (sortCol===6) { va=a.data_entrada||''; vb=b.data_entrada||''; }
-      else if (sortCol>=7 && sortCol<7+camposCustom.length) {
-        const c = camposCustom[sortCol-7];
+      else if (sortCol===5) { va=a.data_entrada||''; vb=b.data_entrada||''; }
+      else if (sortCol>=6 && sortCol<6+camposCustom.length) {
+        const c = camposCustom[sortCol-6];
         va=(a.campos_valores||{})[c.id]||'';
         vb=(b.campos_valores||{})[c.id]||'';
       }
@@ -1605,7 +1611,6 @@ function renderTabela() {
       <td style="white-space:nowrap">${n.contato_nome||'—'}</td>
       <td><span class="badge" style="background:rgba(123,47,255,.15);color:var(--ps);border:1px solid var(--border);white-space:nowrap">${etapa?.nome||'—'}</span></td>
       <td style="white-space:nowrap">${fR(n.valor_fechado||n.valor)}</td>
-      <td>${n.proximo_passo||'—'}</td>
       <td style="white-space:nowrap">${n.data_entrada ? new Date(n.data_entrada+'T12:00:00').toLocaleDateString('pt-BR') : '—'}</td>
       ${camposCustom.map(c=>`<td style="white-space:nowrap">${cv[c.id]||'—'}</td>`).join('')}
       <td><button class="icon-btn danger" onclick="event.stopPropagation();excluirNegRapido('${n.id}')">
@@ -1631,7 +1636,8 @@ async function soltar(etapaId) {
   // etapas podem ser renomeadas em Configurações, e detectar por texto
   // ("includes('ganho')") quebra silenciosamente se isso acontecer.
   const { idsGanho, idsPerdido } = limitesEtapas();
-  if (idsGanho.includes(etapaId) || idsPerdido.includes(etapaId)) update.data_fechamento = hoje();
+  if (idsGanho.includes(etapaId))   update.data_fechamento = hoje();
+  if (idsPerdido.includes(etapaId)) update.data_perda = hoje();
   const { error } = await sb.from('negocios').update(update).eq('id', id);
   if (error) { alert('Não foi possível mover o negócio: ' + error.message); return; }
   await carregarNegocios();
@@ -1691,11 +1697,11 @@ async function abrirModalNegocio(id) {
     document.getElementById('n-etapa').value     = n.etapa_id||'';
     document.getElementById('n-valor').value     = n.valor||'';
     document.getElementById('n-origem').value    = n.origem||'';
-    document.getElementById('n-proximo').value   = n.proximo_passo||'';
     document.getElementById('n-owner').value     = n.owner_id||'';
     document.getElementById('n-vfechado').value  = n.valor_fechado||'';
     document.getElementById('n-dfechamento').value = n.data_fechamento||'';
     document.getElementById('n-motivo').value    = n.motivo_perda||'';
+    document.getElementById('n-dperda').value    = n.data_perda||'';
     document.getElementById('n-cnom').value      = n.contato_nome||'';
     document.getElementById('n-cemp').value      = n.contato_empresa||'';
     document.getElementById('n-ctel').value      = n.contato_telefone||'';
@@ -1706,7 +1712,7 @@ async function abrirModalNegocio(id) {
     await carregarNotasNeg(id);
     await carregarAtivsNeg(id);
   } else {
-    ['n-titulo','n-valor','n-origem','n-proximo','n-vfechado','n-dfechamento','n-motivo',
+    ['n-titulo','n-valor','n-origem','n-vfechado','n-dfechamento','n-motivo','n-dperda',
      'n-cnom','n-cemp','n-ctel','n-cemail','n-ccargo'].forEach(f=>document.getElementById(f).value='');
     if (etapas.length) document.getElementById('n-etapa').value = etapas[0].id;
     // Responsável padrão: quem está criando o negócio
@@ -1836,11 +1842,11 @@ async function salvarNegocio() {
     etapa_id:         etapaId,
     valor:            parseFloat(document.getElementById('n-valor').value)||0,
     origem:           document.getElementById('n-origem').value||null,
-    proximo_passo:    document.getElementById('n-proximo').value.trim()||null,
     owner_id:         document.getElementById('n-owner').value||null,
     valor_fechado:    isGanho ? parseFloat(document.getElementById('n-vfechado').value)||null : null,
-    data_fechamento:  (isGanho||isPerdido) ? (document.getElementById('n-dfechamento').value||hoje()) : null,
+    data_fechamento:  isGanho ? (document.getElementById('n-dfechamento').value||hoje()) : null,
     motivo_perda:     isPerdido ? document.getElementById('n-motivo').value||null : null,
+    data_perda:       isPerdido ? (document.getElementById('n-dperda').value||hoje()) : null,
     contato_nome:     document.getElementById('n-cnom').value.trim()||null,
     contato_empresa:  document.getElementById('n-cemp').value.trim()||null,
     contato_telefone: document.getElementById('n-ctel').value.trim()||null,
@@ -1958,14 +1964,29 @@ async function salvarAtividade() {
 // ═══════════════════════════════════════════════════════
 function renderConfigEtapas() {
   const el = document.getElementById('config-etapas-list');
-  el.innerHTML = etapas.map(e=>`
+  const { etapasOrd, idsFinal } = limitesEtapas();
+  const movable = etapasOrd.filter(e=>!idsFinal.includes(e.id));
+  el.innerHTML = etapasOrd.map(e=>{
+    const protegida = idsFinal.includes(e.id);
+    const movIdx = movable.findIndex(m=>m.id===e.id);
+    return `
     <div class="config-row" style="gap:8px">
+      ${protegida ? '<div style="width:22px;flex-shrink:0"></div>' : `
+      <div style="display:flex;flex-direction:column;gap:1px;flex-shrink:0">
+        <button class="icon-btn" style="padding:2px;${movIdx<=0?'opacity:.3;pointer-events:none':''}" onclick="moverEtapa('${e.id}',-1)" title="Mover para cima">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px;display:block"><polyline points="18 15 12 9 6 15"/></svg>
+        </button>
+        <button class="icon-btn" style="padding:2px;${movIdx>=movable.length-1?'opacity:.3;pointer-events:none':''}" onclick="moverEtapa('${e.id}',1)" title="Mover para baixo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px;display:block"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+      </div>`}
       <input
         class="tsearch"
-        style="flex:1;padding:6px 10px;font-size:13px"
+        style="flex:1;padding:6px 10px;font-size:13px${protegida?';opacity:.6;cursor:not-allowed':''}"
         value="${e.nome}"
-        onblur="editarEtapa('${e.id}','nome',this.value)"
-        onkeydown="if(event.key==='Enter')this.blur()"
+        ${protegida
+          ? `readonly title="${e.nome} é uma etapa fixa do funil e não pode ser renomeada"`
+          : `onblur="editarEtapa('${e.id}','nome',this.value)" onkeydown="if(event.key==='Enter')this.blur()"`}
         placeholder="Nome da etapa">
       <input
         class="tsearch"
@@ -1975,16 +1996,40 @@ function renderConfigEtapas() {
         onblur="editarEtapa('${e.id}','alerta_dias',this.value)"
         onkeydown="if(event.key==='Enter')this.blur()"
         placeholder="Dias alerta">
+      ${protegida ? '' : `
       <button class="icon-btn danger" onclick="excluirEtapa('${e.id}')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
-      </button>
-    </div>`).join('') || '<div style="font-size:12px;color:var(--dim);margin-bottom:8px">Nenhuma etapa.</div>';
+      </button>`}
+    </div>`;
+  }).join('') || '<div style="font-size:12px;color:var(--dim);margin-bottom:8px">Nenhuma etapa.</div>';
   document.getElementById('config-etapa-form').style.display = etapas.length >= 7 ? 'none' : '';
+}
+
+// Reordena etapas do meio do funil (nunca mexe nas 2 finais — Ganho/Perdido
+// continuam sempre por último, e nunca podem ser movidas).
+async function moverEtapa(id, direcao) {
+  const { etapasOrd, idsFinal } = limitesEtapas();
+  const movable = etapasOrd.filter(e=>!idsFinal.includes(e.id));
+  const idx = movable.findIndex(e=>e.id===id);
+  if (idx===-1) return;
+  const alvo = idx + direcao;
+  if (alvo<0 || alvo>=movable.length) return;
+  const a = movable[idx], b = movable[alvo];
+  const { error: e1 } = await sb.from('etapas').update({ordem:b.ordem}).eq('id',a.id);
+  const { error: e2 } = await sb.from('etapas').update({ordem:a.ordem}).eq('id',b.id);
+  if (e1 || e2) { alert('Não foi possível reordenar: ' + (e1||e2).message); return; }
+  await carregarEtapas();
+  atualizarSelectEtapas(); atualizarFiltroEtapas();
+  renderConfigEtapas(); renderView(); renderDashboard();
 }
 
 async function editarEtapa(id, campo, valor) {
   const update = {};
   if (campo === 'nome') {
+    // Defesa extra: mesmo que o input não devesse permitir edição pra
+    // Ganho/Perdido, bloqueia aqui também caso a chamada venha de outro lugar.
+    const { idsFinal } = limitesEtapas();
+    if (idsFinal.includes(id)) { renderConfigEtapas(); return; }
     valor = valor.trim();
     if (!valor) return;
     update.nome = valor;
@@ -2140,13 +2185,13 @@ async function salvarConfigEmpresa() {
 // IMPORT / EXPORT
 // ═══════════════════════════════════════════════════════
 function exportarCSV() {
-  const cols = ['titulo','contato_nome','contato_empresa','contato_telefone','contato_email','etapa','valor','valor_fechado','origem','proximo_passo','motivo_perda'];
+  const cols = ['titulo','contato_nome','contato_empresa','contato_telefone','contato_email','etapa','valor','valor_fechado','data_fechamento','motivo_perda','data_perda','origem'];
   const customCols = camposCustom.map(c=>c.nome);
   const header = [...cols, ...customCols];
   const rows = negocios.map(n => {
     const etapa = etapas.find(e=>e.id===n.etapa_id);
     const base  = [n.titulo,n.contato_nome||'',n.contato_empresa||'',n.contato_telefone||'',n.contato_email||'',
-                   etapa?.nome||'',n.valor||0,n.valor_fechado||'',n.origem||'',n.proximo_passo||'',n.motivo_perda||''];
+                   etapa?.nome||'',n.valor||0,n.valor_fechado||'',n.data_fechamento||'',n.motivo_perda||'',n.data_perda||'',n.origem||''];
     const cv = n.campos_valores||{};
     const custom = camposCustom.map(c=>cv[c.id]||'');
     return [...base,...custom];
@@ -2186,9 +2231,10 @@ async function importarCSV(event) {
       contato_email:    l[header.indexOf('contato_email')]||null,
       valor:            parseFloat(l[header.indexOf('valor')])||0,
       valor_fechado:    parseFloat(l[header.indexOf('valor_fechado')])||null,
+      data_fechamento:  l[header.indexOf('data_fechamento')]||null,
       origem:           l[header.indexOf('origem')]||null,
-      proximo_passo:    l[header.indexOf('proximo_passo')]||null,
       motivo_perda:     l[header.indexOf('motivo_perda')]||null,
+      data_perda:       l[header.indexOf('data_perda')]||null,
       etapa_id:         (etapaMatch || etapaPadrao)?.id || null,
       owner_id:         ownerPadrao,
       campos_valores:   cv,
@@ -2318,9 +2364,12 @@ function fecharModal(nome) {
 // DADOS DE TESTE
 // ═══════════════════════════════════════════════════════
 async function carregarDadosTeste() {
+  if (empresaAtual?.id !== EMPRESA_TESTE_ID) {
+    return alert('Dados de teste só podem ser inseridos na Empresa Teste.');
+  }
   const btn = event.target;
   const status = document.getElementById('seed-status');
-  if (!confirm('Inserir 100 negócios de teste nesta empresa? Os campos personalizados precisam estar criados primeiro (Cargo, Faturamento, Porte, Colaboradores, Segmento, Origem do Lead).')) return;
+  if (!confirm('Inserir 100 negócios de teste nesta empresa? Os campos personalizados usados serão os que já estiverem configurados em Campos personalizados — se algum for do tipo seleção, uma opção aleatória é sorteada para cada negócio.')) return;
 
   if (negocios.length + 100 > LIMITE_NEGOCIOS) {
     alert(`Essa empresa já tem ${negocios.length} negócios. Inserir mais 100 passaria do limite de ${LIMITE_NEGOCIOS} do plano.`);
@@ -2351,9 +2400,20 @@ async function carregarDadosTeste() {
     return etapasPorOrdem[idx]?.id || etapasPorOrdem[0]?.id;
   }
 
-  // Mapear nome de campo → id
-  const campoMap = {};
-  camposCustom.forEach(c => { campoMap[c.nome] = c.id; });
+  // Gera um valor de teste plausível para um campo personalizado, conforme
+  // o tipo que a PRÓPRIA empresa configurou — nada de categorias fixas do
+  // sistema. Se a empresa não tiver nenhum campo personalizado, os
+  // negócios de teste simplesmente não têm campos_valores preenchidos.
+  function valorAleatorioParaCampo(campo) {
+    if (campo.tipo === 'selecao' && campo.opcoes?.length) {
+      return campo.opcoes[Math.floor(Math.random()*campo.opcoes.length)];
+    }
+    if (campo.tipo === 'data') {
+      const d = new Date(); d.setDate(d.getDate() - Math.floor(Math.random()*180));
+      return d.toISOString().slice(0,10);
+    }
+    return 'Exemplo ' + (Math.floor(Math.random()*90)+10);
+  }
 
   // Gera 100 negócios dinamicamente (sem JSON fixo)
   function gerarNegociosTeste() {
@@ -2361,13 +2421,8 @@ async function carregarDadosTeste() {
     var emps  = ["Costa Moda","Tech Solucoes","Clinica Saude","Construtora DS","Cafe Aroma","Grupo Estrela","Distribuidora Alfa","Studio Creative","Auto Pecas BR","Farm Fresh","RH Consultores","Legal Cia","MedCenter","LogiRapido","EduPlus","Varejo Agil","Industria Nova","Serv Master","DataPrime","Agro Sul"];
     var tits  = ["Implantacao comercial","Estruturacao de vendas","Consultoria comercial","Playbook de vendas","Diagnostico comercial","Treinamento de time","Reestruturacao do funil","Acompanhamento mensal","Setup de CRM","Mapeamento de processo"];
     var cargos= ["CEO","Diretor Comercial","Gerente de Vendas","Head de Marketing","Socio-Fundador","Diretor Financeiro","Gerente Geral","Proprietario"];
-    var fats  = ["Ate R 50k/mes","R 50k-200k/mes","R 200k-500k/mes","R 500k-1M/mes","Acima de R 1M/mes"];
-    var ports = ["MEI","Micro","Pequena","Media"];
-    var cols  = ["1-5","6-20","21-50","51-200","200+"];
-    var segs  = ["Varejo","Servicos","Saude","Construcao","Tecnologia","Alimentacao","Educacao","Logistica","Industria","Agronegocio"];
     var origs = ["Indicacao","Prospeccao ativa","Inbound","Evento","Rede social","Outro"];
-    var mots  = ["Preco","Concorrente","Prazo","Sem budget","Sem decisao","Produto nao atende","Outro"];
-    var prox  = ["Enviar proposta","Agendar reuniao","Follow-up WhatsApp","Apresentar cases","Aguardar retorno","Negociar contrato","",""];
+    var mots  = ["Preco","Concorrente","Prazo","Sem Budget","Nao e o decisor","Produto nao atende","Outros"];
     var vals  = [3000,4000,5000,6000,8000,10000,12000,15000,20000,25000,30000];
     var etns  = ["lead","lead","lead","qualificacao","qualificacao","negociacao","negociacao","ganho","ganho","perdido","perdido"];
     var r = function(a){return a[Math.floor(Math.random()*a.length)];};
@@ -2376,6 +2431,9 @@ async function carregarDadosTeste() {
     for (var i=0;i<100;i++) {
       var etapa=r(etns), valor=r(vals);
       var isGanho=etapa==='ganho', isPerdido=etapa==='perdido';
+      // Campos personalizados: usa só os que a empresa já tem configurados hoje
+      var cvPorId = {};
+      camposCustom.forEach(function(c){ cvPorId[c.id] = valorAleatorioParaCampo(c); });
       res.push({
         titulo:r(tits)+' - '+r(emps),
         contato_nome:r(nomes), contato_empresa:r(emps),
@@ -2384,12 +2442,13 @@ async function carregarDadosTeste() {
         contato_cargo:r(cargos),
         valor:valor,
         valor_fechado:isGanho?Math.round(valor*(.85+Math.random()*.25)):null,
-        origem:r(origs), proximo_passo:r(prox),
+        origem:r(origs),
         motivo_perda:isPerdido?r(mots):null,
         data_entrada:rDate(365,0),
-        data_fechamento:(isGanho||isPerdido)?rDate(300,7):null,
+        data_fechamento:isGanho?rDate(300,7):null,
+        data_perda:isPerdido?rDate(300,7):null,
         etapa_nome:etapa,
-        campos_por_nome:{'Cargo':r(cargos),'Faturamento':r(fats),'Porte':r(ports),'Colaboradores':r(cols),'Segmento':r(segs),'Origem do Lead':r(origs)}
+        campos_valores:cvPorId,
       });
     }
     return res;
@@ -2403,12 +2462,6 @@ async function carregarDadosTeste() {
     const lote = SEED_DATA.slice(i, i + BATCH);
     status.textContent = `Inserindo negócios ${i+1}–${Math.min(i+BATCH, SEED_DATA.length)} de ${SEED_DATA.length}...`;
     const rows = lote.map(n => {
-      const cv = {};
-      if (n.campos_por_nome) {
-        Object.entries(n.campos_por_nome).forEach(([nome, val]) => {
-          const cid = campoMap[nome]; if (cid) cv[cid] = val;
-        });
-      }
       const nIsGanho   = n.etapa_nome === 'ganho';
       const nIsPerdido = n.etapa_nome === 'perdido';
       return {
@@ -2419,9 +2472,9 @@ async function carregarDadosTeste() {
         contato_telefone:n.contato_telefone, contato_email:n.contato_email,
         contato_cargo:n.contato_cargo, valor:n.valor,
         valor_fechado:n.valor_fechado, origem:n.origem,
-        proximo_passo:n.proximo_passo||null, motivo_perda:n.motivo_perda,
-        data_entrada:n.data_entrada, data_fechamento:n.data_fechamento,
-        campos_valores:cv,
+        motivo_perda:n.motivo_perda,
+        data_entrada:n.data_entrada, data_fechamento:n.data_fechamento, data_perda:n.data_perda,
+        campos_valores:n.campos_valores,
         ultima_atualizacao:(function(){
           if (!nIsGanho && !nIsPerdido && Math.random()<0.3) {
             var d=new Date(); d.setDate(d.getDate()-Math.floor(Math.random()*40+15)); return d.toISOString();
@@ -3025,8 +3078,16 @@ function negociosNoPeriodo(lista, dataIni, dataFim) {
   return lista.filter(n => n.data_entrada && n.data_entrada >= dataIni && n.data_entrada <= dataFim);
 }
 
-function fechadosNoPeriodo(lista, dataIni, dataFim) {
-  return lista.filter(n => n.data_fechamento && n.data_fechamento >= dataIni && n.data_fechamento <= dataFim);
+function fechadosNoPeriodo(lista, dataIni, dataFim, idsGanho, idsPerdido) {
+  return lista.filter(n => {
+    // Ganho fecha por data_fechamento; Perdido fecha por data_perda —
+    // são campos distintos desde que passamos a rastrear a data da perda
+    // separadamente da data de fechamento (que é só para vendas ganhas).
+    const isGanho = idsGanho.includes(n.etapa_id);
+    const isPerdido = idsPerdido.includes(n.etapa_id);
+    const dt = isGanho ? n.data_fechamento : (isPerdido ? n.data_perda : null);
+    return dt && dt >= dataIni && dt <= dataFim;
+  });
 }
 
 function calcularConversao(fechados, idsGanho, idsPerdido) {
@@ -3076,8 +3137,8 @@ function montarDiagnostico() {
   // ── KPIs do resumo executivo ──────────────────────────────────────────
   const [mIni, mFim]   = mesAtualRange();
   const [maIni, maFim] = mesAnteriorRange();
-  const fechAtual  = fechadosNoPeriodo(negocios, mIni, mFim);
-  const fechAnt    = fechadosNoPeriodo(negocios, maIni, maFim);
+  const fechAtual  = fechadosNoPeriodo(negocios, mIni, mFim, idsGanho, idsPerdido);
+  const fechAnt    = fechadosNoPeriodo(negocios, maIni, maFim, idsGanho, idsPerdido);
   const { ganhos: ganhosAtual,   conv: convAtual } = calcularConversao(fechAtual, idsGanho, idsPerdido);
   const { ganhos: ganhosAnt,     conv: convAnt }   = calcularConversao(fechAnt,   idsGanho, idsPerdido);
 
