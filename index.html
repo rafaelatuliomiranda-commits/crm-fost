@@ -102,6 +102,15 @@ main{position:relative;z-index:1;max-width:1380px;margin:0 auto;padding:80px 32p
 .tsearch{flex:1;min-width:160px;padding:9px 13px;background:var(--cbg);border:1px solid var(--border);border-radius:6px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;color:var(--white);outline:none;}
 .tsearch::placeholder{color:var(--dim);}
 .tselect{padding:9px 11px;background:var(--cbg);border:1px solid var(--border);border-radius:6px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:600;color:var(--muted);outline:none;cursor:pointer;}
+.msf-wrap{position:relative;display:inline-block;}
+.msf-btn{padding:9px 11px;background:var(--cbg);border:1px solid var(--border);border-radius:6px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:600;color:var(--muted);outline:none;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;}
+.msf-btn.ativo{color:var(--cyan);border-color:rgba(0,212,255,.35);background:rgba(0,212,255,.08);}
+.msf-panel{position:absolute;top:calc(100% + 6px);left:0;z-index:200;background:#07005a;border:1px solid var(--bordm);border-radius:10px;box-shadow:0 20px 50px rgba(0,0,10,.55);padding:8px;min-width:200px;max-height:260px;overflow-y:auto;}
+.msf-option{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:6px;font-size:12px;color:var(--white);cursor:pointer;user-select:none;}
+.msf-option:hover{background:rgba(123,47,255,.15);}
+.msf-option input{accent-color:var(--cyan);cursor:pointer;}
+.msf-panel-footer{margin-top:4px;padding-top:6px;border-top:1px solid var(--border);text-align:right;}
+.msf-panel-footer a{font-size:11px;color:var(--danger);cursor:pointer;text-decoration:none;}
 .tselect option{background:#060060;}
 .btn-add{display:flex;align-items:center;gap:7px;padding:9px 17px;background:linear-gradient(135deg,var(--purple),var(--ps));border:none;border-radius:6px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:white;box-shadow:0 4px 14px rgba(123,47,255,.3);transition:transform .2s,box-shadow .2s;}
 .btn-add:hover{transform:translateY(-1px);box-shadow:0 6px 22px rgba(123,47,255,.45);}
@@ -728,7 +737,11 @@ tbody tr:hover td{background:rgba(123,47,255,.06);}
             </select>
           </div>
           <div id="novo-campo-opcoes-wrap" style="display:none">
-            <input id="novo-campo-opcoes" class="tsearch" style="width:100%" placeholder="Opções separadas por vírgula (máx. 10, ex: Alta, Média, Baixa)">
+            <div class="opcoes-wrap" id="novo-campo-opcoes-tags"></div>
+            <div class="add-opcao-row">
+              <input id="novo-campo-opcao-input" placeholder="Digite uma opção e aperte Enter…" onkeydown="if(event.key==='Enter'){event.preventDefault();adicionarOpcaoNovoCampo();}">
+              <button type="button" class="btn-add-opcao" onclick="adicionarOpcaoNovoCampo()">+ Opção</button>
+            </div>
           </div>
           <button class="btn-add" onclick="adicionarCampo()">+ Campo</button>
         </div>
@@ -1179,6 +1192,8 @@ async function selecionarCliente(empId, manual = true) {
     // estava, não forçar de volta pro Início.
     filtroPipeSemResponsavel = false;
     filtrosKanban = {};
+    filtrosCustom = {};
+    msfPainelAberto = null;
     const elBusca = document.getElementById('pipe-busca'); if (elBusca) elBusca.value = '';
     const elEstag = document.getElementById('pipe-filtro-estagnado'); if (elEstag) elEstag.value = '';
     const elEtapaF = document.getElementById('pipe-filtro-etapa'); if (elEtapaF) elEtapaF.value = '';
@@ -1532,9 +1547,11 @@ function negociosFiltrados() {
       const dias  = dtUlt ? Math.floor((agora - dtUlt)/86400000) : 0;
       if (dias < etapa.alerta_dias) return false;
     }
-    // Filtros campos custom do kanban
-    for (const [cid, val] of Object.entries(filtrosKanban)) {
-      if (val && (n.campos_valores||{})[cid] !== val) return false;
+    // Filtros campos custom do kanban — cada campo pode ter várias opções
+    // marcadas; o negócio passa se o valor dele bater com QUALQUER uma delas
+    // (limpo = sem filtro nesse campo).
+    for (const [cid, vals] of Object.entries(filtrosKanban)) {
+      if (vals && vals.length && !vals.includes((n.campos_valores||{})[cid])) return false;
     }
     return true;
   });
@@ -1568,18 +1585,81 @@ function renderView() {
 }
 
 let filtrosKanban = {};
+let msfPainelAberto = null; // id do painel de filtro multi-seleção aberto no momento (só um por vez)
+
+// Fecha o painel aberto se a pessoa clicar fora dele
+document.addEventListener('click', function() {
+  if (!msfPainelAberto) return;
+  const painel = document.getElementById(msfPainelAberto);
+  if (painel) painel.style.display = 'none';
+  msfPainelAberto = null;
+});
+
+function toggleMsfPanel(panelId) {
+  const painel = document.getElementById(panelId);
+  if (!painel) return;
+  if (msfPainelAberto === panelId) {
+    painel.style.display = 'none';
+    msfPainelAberto = null;
+    return;
+  }
+  if (msfPainelAberto) {
+    const anterior = document.getElementById(msfPainelAberto);
+    if (anterior) anterior.style.display = 'none';
+  }
+  painel.style.display = 'block';
+  msfPainelAberto = panelId;
+}
+
+// store = filtrosKanban ou filtrosCustom (passado por referência); idx = índice
+// da opção dentro de c.opcoes (evita ter que colocar o texto da opção dentro
+// do atributo onclick, o que seria arriscado se o texto tivesse aspas).
+function toggleValorFiltroMulti(store, cid, idx) {
+  const campo = camposCustom.find(c=>c.id===cid);
+  if (!campo) return;
+  const valor = campo.opcoes[idx];
+  if (!store[cid]) store[cid] = [];
+  const i = store[cid].indexOf(valor);
+  if (i === -1) store[cid].push(valor); else store[cid].splice(i,1);
+  if (store[cid].length === 0) delete store[cid];
+}
+
+function limparFiltroMultiCampo(store, cid) {
+  delete store[cid];
+}
+
+// Gera o botão + painel de checkboxes de um campo de seleção, reaproveitado
+// tanto pelo Kanban quanto pela Tabela (Relatório) — só muda o "contexto"
+// (usado nos ids, pra não colidir os dois) e qual função re-renderiza.
+function renderFiltroMultiHtml(c, store, contexto, rerenderFn) {
+  const sel = store[c.id] || [];
+  const label = sel.length===0 ? 'Todos' : sel.length===1 ? esc(sel[0]) : sel.length + ' selecionadas';
+  const panelId = `msf-panel-${contexto}-${c.id}`;
+  const btnId   = `msf-btn-${contexto}-${c.id}`;
+  const aberto  = msfPainelAberto === panelId;
+  const storeExpr = contexto==='kanban' ? 'filtrosKanban' : 'filtrosCustom';
+  return `<div class="msf-wrap">
+    <button type="button" id="${btnId}" class="msf-btn ${sel.length?'ativo':''}" onclick="event.stopPropagation();toggleMsfPanel('${panelId}')">
+      ${esc(c.nome)}: ${label} ▾
+    </button>
+    <div class="msf-panel" id="${panelId}" style="display:${aberto?'block':'none'}" onclick="event.stopPropagation()">
+      ${(c.opcoes||[]).map((op,i) => `
+        <label class="msf-option">
+          <input type="checkbox" ${sel.includes(op)?'checked':''} onchange="toggleValorFiltroMulti(${storeExpr},'${c.id}',${i});${rerenderFn}()">
+          ${esc(op)}
+        </label>`).join('')}
+      ${sel.length ? `<div class="msf-panel-footer"><a onclick="limparFiltroMultiCampo(${storeExpr},'${c.id}');${rerenderFn}()">Limpar este filtro</a></div>` : ''}
+    </div>
+  </div>`;
+}
 
 function renderFiltrosKanban() {
   const wrap = document.getElementById('kanban-filtros-custom');
   if (!wrap) return;
   const camposSel = camposCustom.filter(c=>c.tipo==='selecao'&&c.opcoes?.length);
-  const temFiltro = Object.values(filtrosKanban).some(v=>v);
-  wrap.innerHTML = camposSel.map(c=>`
-    <select class="tselect" onchange="filtrosKanban['${c.id}']=this.value;renderView()">
-      <option value="">${esc(c.nome)}: Todos</option>
-      ${(c.opcoes||[]).map(op=>`<option value="${esc(op)}" ${filtrosKanban[c.id]===op?'selected':''}>${esc(op)}</option>`).join('')}
-    </select>`).join('')
-    + (temFiltro ? `<button class="btn-sec" onclick="filtrosKanban={};renderView()" style="color:var(--danger);border-color:rgba(255,107,107,.3)">✕ Limpar</button>` : '');
+  const temFiltro = Object.values(filtrosKanban).some(v=>v && v.length);
+  wrap.innerHTML = camposSel.map(c=>renderFiltroMultiHtml(c, filtrosKanban, 'kanban', 'renderView')).join('')
+    + (temFiltro ? `<button class="btn-sec" onclick="filtrosKanban={};msfPainelAberto=null;renderView()" style="color:var(--danger);border-color:rgba(255,107,107,.3)">✕ Limpar</button>` : '');
 }
 
 function renderKanban() {
@@ -2361,24 +2441,53 @@ async function removerOpcao(id, indice) {
 
 document.getElementById('novo-campo-tipo').addEventListener('change', function() {
   document.getElementById('novo-campo-opcoes-wrap').style.display = this.value==='selecao' ? '' : 'none';
+  if (this.value !== 'selecao') { novasOpcoesCampo = []; renderNovasOpcoesCampo(); }
 });
+
+// Opções do campo em criação são adicionadas uma de cada vez (tag), em vez de
+// digitadas todas juntas separadas por vírgula — ficava confuso pra quem não
+// é técnico (esquecer um espaço, vírgula a mais, etc.). Mesmo padrão visual
+// já usado pra editar opções de um campo existente.
+let novasOpcoesCampo = [];
+
+function renderNovasOpcoesCampo() {
+  const el = document.getElementById('novo-campo-opcoes-tags');
+  el.innerHTML = novasOpcoesCampo.map((op,i) => `
+    <span class="opcao-tag">
+      ${esc(op)}
+      <button type="button" onclick="removerNovaOpcaoCampo(${i})" title="Remover">×</button>
+    </span>`).join('');
+}
+
+function adicionarOpcaoNovoCampo() {
+  const input = document.getElementById('novo-campo-opcao-input');
+  const val = input.value.trim();
+  if (!val) return;
+  if (novasOpcoesCampo.some(o=>o.toLowerCase()===val.toLowerCase())) { input.value=''; return; }
+  if (novasOpcoesCampo.length >= LIMITE_OPCOES) { alert('Máximo de ' + LIMITE_OPCOES + ' opções por campo.'); return; }
+  novasOpcoesCampo.push(val);
+  input.value = '';
+  renderNovasOpcoesCampo();
+}
+
+function removerNovaOpcaoCampo(i) {
+  novasOpcoesCampo.splice(i,1);
+  renderNovasOpcoesCampo();
+}
 
 async function adicionarCampo() {
   if (camposCustom.length >= LIMITE_CAMPOS) return alert('Máximo de ' + LIMITE_CAMPOS + ' campos atingido.');
   const nome = document.getElementById('novo-campo-nome').value.trim();
   if (!nome) return alert('Preencha o nome do campo.');
   const tipo = document.getElementById('novo-campo-tipo').value;
-  const opcoesStr = document.getElementById('novo-campo-opcoes').value;
-  let opcoes = tipo==='selecao' ? opcoesStr.split(',').map(o=>o.trim()).filter(Boolean) : null;
-  if (opcoes && opcoes.length > LIMITE_OPCOES) {
-    opcoes = opcoes.slice(0, LIMITE_OPCOES);
-    alert('Máximo de ' + LIMITE_OPCOES + ' opções por campo. Apenas as primeiras ' + LIMITE_OPCOES + ' foram salvas.');
-  }
+  if (tipo === 'selecao' && novasOpcoesCampo.length === 0) return alert('Adicione ao menos uma opção pro campo de seleção.');
+  const opcoes = tipo === 'selecao' ? [...novasOpcoesCampo] : null;
   await sb.from('campos_custom').insert({ empresa_id:empresaAtual.id, nome, tipo, opcoes, ordem:camposCustom.length+1 });
   document.getElementById('novo-campo-nome').value='';
-  document.getElementById('novo-campo-opcoes').value='';
   document.getElementById('novo-campo-tipo').value='texto';
   document.getElementById('novo-campo-opcoes-wrap').style.display='none';
+  novasOpcoesCampo = [];
+  renderNovasOpcoesCampo();
   await carregarCampos();
   renderConfigCampos(); renderView(); renderDashboard();
 }
@@ -2963,26 +3072,23 @@ function renderFiltrosCustom() {
   const wrap = document.getElementById('tabela-filtros-custom');
   if (!camposCustom.length) { wrap.innerHTML=''; return; }
   const camposSel = camposCustom.filter(c=>c.tipo==='selecao'&&c.opcoes?.length);
-  const temFiltro = Object.values(filtrosCustom).some(v=>v);
-  wrap.innerHTML = camposSel.map(c=>`
-    <select class="tselect" onchange="filtrosCustom['${c.id}']=this.value;renderTabela()">
-      <option value="">${esc(c.nome)}: Todos</option>
-      ${(c.opcoes||[]).map(op=>`<option value="${esc(op)}" ${filtrosCustom[c.id]===op?'selected':''}>${esc(op)}</option>`).join('')}
-    </select>`).join('') +
+  const temFiltro = Object.values(filtrosCustom).some(v=>v && v.length);
+  wrap.innerHTML = camposSel.map(c=>renderFiltroMultiHtml(c, filtrosCustom, 'tabela', 'renderTabela')).join('') +
     (temFiltro ? `<button class="btn-sec" onclick="limparFiltrosTabela()" style="color:var(--danger);border-color:rgba(255,107,107,.3)">✕ Limpar filtros</button>` : '');
 }
 
 function negociosTabelaFiltrados() {
   let lista = negociosFiltrados();
-  // Aplicar filtros custom
-  Object.entries(filtrosCustom).forEach(([cid, val]) => {
-    if (val) lista = lista.filter(n=>(n.campos_valores||{})[cid]===val);
+  // Aplicar filtros custom — mesma lógica "bate com qualquer opção marcada" do Kanban
+  Object.entries(filtrosCustom).forEach(([cid, vals]) => {
+    if (vals && vals.length) lista = lista.filter(n=>vals.includes((n.campos_valores||{})[cid]));
   });
   return lista;
 }
 
 function limparFiltrosTabela() {
   filtrosCustom = {};
+  msfPainelAberto = null;
   renderTabela();
 }
 
