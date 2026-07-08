@@ -610,13 +610,19 @@ tbody tr:hover td{background:rgba(123,47,255,.06);}
         <button class="view-btn" id="vbtn-tabela" onclick="setView('tabela')">Relatório</button>
       </div>
     </div>
-    <input class="tsearch" type="text" id="pipe-busca" placeholder="Buscar negócio…" oninput="filtroPipeSemResponsavel=false;renderView()" style="min-width:160px;flex:1">
+    <input class="tsearch" type="text" id="pipe-busca" placeholder="Buscar negócio…" oninput="filtroPipeSemResponsavel=false;buscaPipelineDebounced()" style="min-width:160px;flex:1">
     <select class="tselect" id="pipe-filtro-estagnado" onchange="filtroPipeSemResponsavel=false;renderView()">
       <option value="">Todos os negócios</option>
       <option value="estagnado">⚠ Estagnados além do limite</option>
     </select>
     <select class="tselect" id="pipe-filtro-etapa" onchange="filtroPipeSemResponsavel=false;renderView()">
       <option value="">Todas as etapas</option>
+    </select>
+    <select class="tselect" id="pipe-filtro-prioridade" onchange="filtroPipeSemResponsavel=false;renderView()">
+      <option value="">Todas as prioridades</option>
+      <option value="alta">Prioridade alta</option>
+      <option value="media">Prioridade média</option>
+      <option value="baixa">Prioridade baixa</option>
     </select>
     <select class="tselect" id="pipe-ordem" onchange="renderView()">
       <option value="criado_em_desc">Mais recentes</option>
@@ -780,8 +786,8 @@ tbody tr:hover td{background:rgba(123,47,255,.06);}
         </div>
         <div style="font-size:11px;color:var(--dim);line-height:1.8">
           <strong style="color:var(--muted)">Formato esperado:</strong><br>
-          <code style="font-size:10px">titulo, contato_nome, contato_empresa, contato_telefone, contato_email, etapa, valor, valor_fechado, data_fechamento, motivo_perda, data_perda, origem</code><br>
-          <span style="color:var(--dim)">+ uma coluna para cada campo personalizado (pelo nome exato dele). "etapa" deve bater com o nome de uma etapa existente — se não bater ou vier vazia, o negócio entra na primeira etapa do funil.</span>
+          <code style="font-size:10px">titulo, contato_nome, contato_empresa, contato_telefone, contato_email, etapa, valor, prioridade, valor_fechado, data_fechamento, motivo_perda, data_perda</code><br>
+          <span style="color:var(--dim)">+ uma coluna para cada campo personalizado (pelo nome exato dele). "etapa" deve bater com o nome de uma etapa existente — se não bater ou vier vazia, o negócio entra na primeira etapa do funil. "prioridade" aceita baixa/media/alta — qualquer outro valor vira "media".</span>
         </div>
       </div>
 
@@ -815,11 +821,11 @@ tbody tr:hover td{background:rgba(123,47,255,.06);}
     </div>
     <div class="field-row">
       <div class="field"><label>Receita prevista (R$)</label><input id="n-valor" type="number" min="0" placeholder="0"></div>
-      <div class="field"><label>Origem</label>
-        <select id="n-origem">
-          <option value="">Selecionar…</option>
-          <option>Indicação</option><option>Prospecção ativa</option>
-          <option>Inbound</option><option>Evento</option><option>Rede social</option><option>Outro</option>
+      <div class="field"><label>Prioridade</label>
+        <select id="n-prioridade">
+          <option value="baixa">Baixa</option>
+          <option value="media" selected>Média</option>
+          <option value="alta">Alta</option>
         </select>
       </div>
     </div>
@@ -858,7 +864,6 @@ tbody tr:hover td{background:rgba(123,47,255,.06);}
       <div class="field"><label>Telefone / WhatsApp</label><input id="n-ctel" placeholder="(41) 99000-0000"></div>
       <div class="field"><label>E-mail</label><input id="n-cemail" placeholder="contato@empresa.com"></div>
     </div>
-    <div class="field"><label>Cargo</label><input id="n-ccargo" placeholder="Ex: CEO, Diretor Comercial"></div>
 
     <!-- Campos personalizados -->
     <div id="campos-custom-wrap"></div>
@@ -909,6 +914,34 @@ tbody tr:hover td{background:rgba(123,47,255,.06);}
     <div class="modal-actions">
       <button class="btn-cancel" onclick="fecharModal('atividade')">Cancelar</button>
       <button class="btn-save" onclick="salvarAtividade()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: EXCLUIR ETAPA EM USO -->
+<div class="modal-overlay" id="modal-excluir-etapa" onclick="if(event.target===this)fecharModal('excluir-etapa')">
+  <div class="modal" style="width:460px">
+    <div class="modal-title">Etapa com negócios</div>
+    <div id="ee-texto" style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:14px"></div>
+    <div class="field"><label>Mover esses negócios para</label>
+      <select id="ee-destino"></select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="fecharModal('excluir-etapa')">Cancelar</button>
+      <button class="btn-danger" onclick="confirmarExclusaoEtapa()">Mover e excluir etapa</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: EXCLUIR CAMPO EM USO -->
+<div class="modal-overlay" id="modal-excluir-campo" onclick="if(event.target===this)fecharModal('excluir-campo')">
+  <div class="modal" style="width:460px">
+    <div class="modal-title">Campo com dados preenchidos</div>
+    <div id="ec-texto" style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:14px"></div>
+    <div class="modal-actions" style="flex-wrap:wrap;gap:8px">
+      <button class="btn-cancel" onclick="fecharModal('excluir-campo')">Cancelar</button>
+      <button class="btn-sec" onclick="confirmarExclusaoCampo(true)">Salvar valores como nota e excluir</button>
+      <button class="btn-danger" onclick="confirmarExclusaoCampo(false)">Excluir e descartar dados</button>
     </div>
   </div>
 </div>
@@ -976,6 +1009,7 @@ let arrastando   = null;
 let sortCol      = null;
 let sortDir      = 1;
 let filtrosCustom = {};
+let buscaDebounceTimer = null;
 let dashDataIni  = null;
 let dashDataFim  = null;
 var calOffset    = 0;
@@ -1393,18 +1427,19 @@ function renderDashboard() {
     + '</div></div>'
   ) : '';
 
-  // ── Pizza de origem ───────────────────────────────────────────────────
-  const origMap = {};
-  lista.filter(n=>n.origem).forEach(n=>{ origMap[n.origem]=(origMap[n.origem]||0)+1; });
-  const dadosOrig = Object.entries(origMap).sort((a,b)=>b[1]-a[1]).map(([l,v])=>({label:l,v}));
+  // ── Pizza de prioridade (campo origem foi removido do sistema) ────────
+  const prioLabels = {baixa:'Baixa', media:'Média', alta:'Alta'};
+  const prioMap = {};
+  lista.forEach(n=>{ const p = n.prioridade||'media'; prioMap[p]=(prioMap[p]||0)+1; });
+  const dadosPrio = ['baixa','media','alta'].filter(p=>prioMap[p]).map(p=>({label:prioLabels[p], v:prioMap[p]}));
 
   container.innerHTML = `
     <div class="dash-grid" style="margin-top:2px">
       ${graficoMensal}
       ${graficoPrevisto}
       <div class="dash-card">
-        <div class="dash-card-title">Negócios por origem</div>
-        ${svgPizza(dadosOrig)}
+        <div class="dash-card-title">Negócios por prioridade</div>
+        ${svgPizza(dadosPrio)}
       </div>
       ${camposSel.slice(0,3).map(campo => {
         const dadosCampo = (campo.opcoes||[]).map(op=>{
@@ -1436,6 +1471,7 @@ let filtroPipeSemResponsavel = false;
 function negociosFiltrados() {
   const busca      = document.getElementById('pipe-busca').value.toLowerCase();
   const fEtapa     = document.getElementById('pipe-filtro-etapa').value;
+  const fPrioridade = document.getElementById('pipe-filtro-prioridade')?.value;
   const fEstagnado = document.getElementById('pipe-filtro-estagnado')?.value;
   const ordem      = document.getElementById('pipe-ordem').value;
   const agora      = new Date();
@@ -1443,6 +1479,7 @@ function negociosFiltrados() {
   let lista = [...negocios].filter(n => {
     if (busca && !n.titulo.toLowerCase().includes(busca) && !(n.contato_nome||'').toLowerCase().includes(busca) && !(n.contato_empresa||'').toLowerCase().includes(busca)) return false;
     if (fEtapa && n.etapa_id !== fEtapa) return false;
+    if (fPrioridade && (n.prioridade||'media') !== fPrioridade) return false;
     if (filtroPipeSemResponsavel && n.owner_id) return false;
     // Filtro estagnados: só negócios em etapas com alerta configurado e além do limite
     if (fEstagnado === 'estagnado') {
@@ -1463,6 +1500,15 @@ function negociosFiltrados() {
   else if (ordem==='titulo_asc') lista.sort((a,b)=>a.titulo.localeCompare(b.titulo));
   else lista.sort((a,b)=>new Date(b.criado_em)-new Date(a.criado_em));
   return lista;
+}
+
+// Evita re-renderizar o pipeline inteiro (kanban/tabela) a cada tecla digitada
+// na busca — com até 500 negócios isso pesava (recalculava cards, atividades
+// vinculadas, borda de estagnação etc. em cada letra). Aguarda uma pausa
+// curta na digitação antes de renderizar.
+function buscaPipelineDebounced() {
+  clearTimeout(buscaDebounceTimer);
+  buscaDebounceTimer = setTimeout(renderView, 200);
 }
 
 function renderView() {
@@ -1502,6 +1548,16 @@ function renderKanban() {
   const etapasOrdenadas = [...etapas].sort((a,b)=>a.ordem-b.ordem);
   const idsFinal = etapasOrdenadas.slice(-2).map(e=>e.id);
 
+  // Agrupa atividades pendentes por negócio_id de uma vez só (O(M)), em vez de
+  // filtrar o array inteiro de atividades pra cada negócio do kanban (O(N*M) —
+  // pesava perceptivelmente com o pipeline perto do limite de 500 negócios).
+  const hjStr = hoje();
+  const ativsPorNegocio = {};
+  atividades.forEach(a => {
+    if (a.concluida) return;
+    (ativsPorNegocio[a.negocio_id] || (ativsPorNegocio[a.negocio_id]=[])).push(a);
+  });
+
   kanban.innerHTML = etapas.map(etapa => {
     const ns = lista.filter(n=>n.etapa_id===etapa.id);
     const tot = ns.reduce((s,n)=>s+(n.valor||0),0);
@@ -1526,8 +1582,8 @@ function renderKanban() {
         }
       }
       // Atividades vinculadas a este negócio
-      const ativsNeg = atividades.filter(a => a.negocio_id === n.id && !a.concluida);
-      const ativsAtrasadas = ativsNeg.filter(a => a.data < hoje());
+      const ativsNeg = ativsPorNegocio[n.id] || [];
+      const ativsAtrasadas = ativsNeg.filter(a => a.data < hjStr);
       let ativIcone = '';
       if (ativsAtrasadas.length > 0) {
         ativIcone = `<span title="${ativsAtrasadas.length} atividade(s) atrasada(s)" style="display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;color:var(--danger);background:rgba(255,107,107,.1);border:1px solid rgba(255,107,107,.25);border-radius:4px;padding:2px 6px">
@@ -1541,13 +1597,25 @@ function renderKanban() {
         </span>`;
       }
 
+      // Badge de prioridade
+      const prio = n.prioridade || 'media';
+      const prioCfg = {
+        alta:  {label:'Alta',  color:'var(--danger)', bg:'rgba(255,107,107,.1)',  border:'rgba(255,107,107,.25)'},
+        media: {label:'Média', color:'var(--yellow)',  bg:'rgba(251,191,36,.08)', border:'rgba(251,191,36,.22)'},
+        baixa: {label:'Baixa', color:'var(--dim)',     bg:'rgba(200,195,255,.06)', border:'rgba(200,195,255,.18)'},
+      }[prio];
+      const prioBadge = `<span style="font-size:9px;font-weight:700;color:${prioCfg.color};background:${prioCfg.bg};border:1px solid ${prioCfg.border};border-radius:4px;padding:2px 6px;white-space:nowrap">${prioCfg.label}</span>`;
+
       return `<div class="deal-card"
         style="border-top:2px solid ${bordaColor}"
         draggable="true"
         ondragstart="arrastando='${n.id}';this.classList.add('dragging')"
         ondragend="this.classList.remove('dragging')"
         onclick="abrirModalNegocio('${n.id}')">
-        <div style="font-size:9px;color:var(--dim);margin-bottom:6px">${diasEtapa}d nesta etapa</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <div style="font-size:9px;color:var(--dim)">${diasEtapa}d nesta etapa</div>
+          ${prioBadge}
+        </div>
         <div class="deal-title">${n.titulo}</div>
         ${n.contato_empresa?`<div class="deal-empresa">${n.contato_empresa}</div>`:''}
         ${n.contato_nome?`<div class="deal-contato">${n.contato_nome}${n.contato_telefone?` · <a href="https://wa.me/55${n.contato_telefone.replace(/\D/g,'')}" target="_blank" onclick="event.stopPropagation()" style="color:var(--green)">WhatsApp↗</a>`:''}</div>`:''}
@@ -1600,12 +1668,13 @@ function renderTabela() {
     </div>`).join('');
 
   // Cabeçalho
-  const colsFixas = ['Negócio','Empresa','Contato','Etapa','Receita','Data entrada'];
+  const colsFixas = ['Negócio','Empresa','Contato','Etapa','Prioridade','Receita','Data entrada'];
   const colsCustom = camposCustom.map(c=>c.nome);
   const allCols = [...colsFixas, ...colsCustom, ''];
   const head = document.getElementById('tabela-neg-head');
   head.innerHTML = `<tr style="position:sticky;top:0;z-index:10">${allCols.map((c,i)=>`<th onclick="sortTabela(${i})" class="${sortCol===i?(sortDir===1?'sort-asc':'sort-desc'):''}" style="white-space:nowrap">${c}</th>`).join('')}</tr>`;
 
+  const rankPrioridade = {baixa:0, media:1, alta:2};
   let sorted = [...lista];
   if (sortCol !== null) {
     sorted.sort((a,b) => {
@@ -1614,10 +1683,11 @@ function renderTabela() {
       else if (sortCol===1) { va=a.contato_empresa||''; vb=b.contato_empresa||''; }
       else if (sortCol===2) { va=a.contato_nome||''; vb=b.contato_nome||''; }
       else if (sortCol===3) { va=etapas.find(e=>e.id===a.etapa_id)?.nome||''; vb=etapas.find(e=>e.id===b.etapa_id)?.nome||''; }
-      else if (sortCol===4) { va=a.valor||0; vb=b.valor||0; }
-      else if (sortCol===5) { va=a.data_entrada||''; vb=b.data_entrada||''; }
-      else if (sortCol>=6 && sortCol<6+camposCustom.length) {
-        const c = camposCustom[sortCol-6];
+      else if (sortCol===4) { va=rankPrioridade[a.prioridade||'media']; vb=rankPrioridade[b.prioridade||'media']; }
+      else if (sortCol===5) { va=a.valor||0; vb=b.valor||0; }
+      else if (sortCol===6) { va=a.data_entrada||''; vb=b.data_entrada||''; }
+      else if (sortCol>=7 && sortCol<7+camposCustom.length) {
+        const c = camposCustom[sortCol-7];
         va=(a.campos_valores||{})[c.id]||'';
         vb=(b.campos_valores||{})[c.id]||'';
       }
@@ -1634,11 +1704,18 @@ function renderTabela() {
   body.innerHTML = sorted.map(n => {
     const etapa = etapas.find(e=>e.id===n.etapa_id);
     const cv = n.campos_valores || {};
+    const prio = n.prioridade || 'media';
+    const prioCfgTabela = {
+      alta:  {label:'Alta',  color:'var(--danger)', bg:'rgba(255,107,107,.1)',  border:'rgba(255,107,107,.25)'},
+      media: {label:'Média', color:'var(--yellow)',  bg:'rgba(251,191,36,.08)', border:'rgba(251,191,36,.22)'},
+      baixa: {label:'Baixa', color:'var(--dim)',     bg:'rgba(200,195,255,.06)', border:'rgba(200,195,255,.18)'},
+    }[prio];
     return `<tr onclick="abrirModalNegocio('${n.id}')" style="cursor:pointer">
       <td class="td-name" style="white-space:nowrap">${n.titulo}</td>
       <td style="white-space:nowrap">${n.contato_empresa||'—'}</td>
       <td style="white-space:nowrap">${n.contato_nome||'—'}</td>
       <td><span class="badge" style="background:rgba(123,47,255,.15);color:var(--ps);border:1px solid var(--border);white-space:nowrap">${etapa?.nome||'—'}</span></td>
+      <td><span style="font-size:10px;font-weight:700;color:${prioCfgTabela.color};background:${prioCfgTabela.bg};border:1px solid ${prioCfgTabela.border};border-radius:4px;padding:2px 7px;white-space:nowrap">${prioCfgTabela.label}</span></td>
       <td style="white-space:nowrap">${fR(n.valor_fechado||n.valor)}</td>
       <td style="white-space:nowrap">${n.data_entrada ? new Date(n.data_entrada+'T12:00:00').toLocaleDateString('pt-BR') : '—'}</td>
       ${camposCustom.map(c=>`<td style="white-space:nowrap">${cv[c.id]||'—'}</td>`).join('')}
@@ -1725,7 +1802,7 @@ async function abrirModalNegocio(id) {
     document.getElementById('n-titulo').value    = n.titulo||'';
     document.getElementById('n-etapa').value     = n.etapa_id||'';
     document.getElementById('n-valor').value     = n.valor||'';
-    document.getElementById('n-origem').value    = n.origem||'';
+    document.getElementById('n-prioridade').value = n.prioridade||'media';
     document.getElementById('n-owner').value     = n.owner_id||'';
     document.getElementById('n-vfechado').value  = n.valor_fechado||'';
     document.getElementById('n-dfechamento').value = n.data_fechamento||'';
@@ -1735,14 +1812,14 @@ async function abrirModalNegocio(id) {
     document.getElementById('n-cemp').value      = n.contato_empresa||'';
     document.getElementById('n-ctel').value      = n.contato_telefone||'';
     document.getElementById('n-cemail').value    = n.contato_email||'';
-    document.getElementById('n-ccargo').value    = n.contato_cargo||'';
     toggleEtapaExtra();
     renderCamposCustomModal(n.campos_valores||{});
     await carregarNotasNeg(id);
     await carregarAtivsNeg(id);
   } else {
-    ['n-titulo','n-valor','n-origem','n-vfechado','n-dfechamento','n-motivo','n-dperda',
-     'n-cnom','n-cemp','n-ctel','n-cemail','n-ccargo'].forEach(f=>document.getElementById(f).value='');
+    ['n-titulo','n-valor','n-vfechado','n-dfechamento','n-motivo','n-dperda',
+     'n-cnom','n-cemp','n-ctel','n-cemail'].forEach(f=>document.getElementById(f).value='');
+    document.getElementById('n-prioridade').value = 'media';
     if (etapas.length) document.getElementById('n-etapa').value = etapas[0].id;
     // Responsável padrão: quem está criando o negócio
     document.getElementById('n-owner').value = perfil?.id || '';
@@ -1870,7 +1947,7 @@ async function salvarNegocio() {
     titulo:           document.getElementById('n-titulo').value.trim(),
     etapa_id:         etapaId,
     valor:            parseFloat(document.getElementById('n-valor').value)||0,
-    origem:           document.getElementById('n-origem').value||null,
+    prioridade:       document.getElementById('n-prioridade').value||'media',
     owner_id:         document.getElementById('n-owner').value||null,
     valor_fechado:    isGanho ? parseFloat(document.getElementById('n-vfechado').value)||null : null,
     data_fechamento:  isGanho ? (document.getElementById('n-dfechamento').value||hoje()) : null,
@@ -1880,7 +1957,6 @@ async function salvarNegocio() {
     contato_empresa:  document.getElementById('n-cemp').value.trim()||null,
     contato_telefone: document.getElementById('n-ctel').value.trim()||null,
     contato_email:    document.getElementById('n-cemail').value.trim()||null,
-    contato_cargo:    document.getElementById('n-ccargo').value.trim()||null,
     campos_valores:   cv,
     ultima_atualizacao: new Date().toISOString(),
   };
@@ -2092,17 +2168,60 @@ async function adicionarEtapa() {
   renderConfigEtapas(); renderView(); renderDashboard();
 }
 
+let etapaParaExcluirId = null;
+
 async function excluirEtapa(id) {
   // Bloquear exclusão das 2 últimas etapas
   const etapasOrd = [...etapas].sort((a,b)=>a.ordem-b.ordem);
   const idsFinal = etapasOrd.slice(-2).map(e=>e.id);
   if (idsFinal.includes(id)) return alert('As etapas Ganho e Perdido não podem ser excluídas — são obrigatórias no funil.');
-  if (!confirm('Excluir esta etapa? Negócios nela ficarão sem etapa.')) return;
-  const { error } = await sb.from('etapas').delete().eq('id',id);
-  if (error) return alert('Não foi possível excluir: ' + error.message + (error.message?.includes('foreign key') ? ' (mova os negócios dessa etapa antes de excluí-la)' : ''));
-  await carregarEtapas();
+
+  const etapa = etapas.find(e=>e.id===id);
+  const afetados = negocios.filter(n=>n.etapa_id===id);
+
+  if (afetados.length === 0) {
+    if (!confirm(`Excluir a etapa "${etapa?.nome}"? Nenhum negócio está nela atualmente.`)) return;
+    const { error } = await sb.from('etapas').delete().eq('id',id);
+    if (error) return alert('Não foi possível excluir: ' + error.message);
+    await carregarEtapas();
+    atualizarSelectEtapas(); atualizarFiltroEtapas();
+    renderConfigEtapas(); renderView();
+    return;
+  }
+
+  // Etapa em uso: perguntar para qual etapa mover os negócios antes de excluir
+  etapaParaExcluirId = id;
+  document.getElementById('ee-texto').textContent =
+    `A etapa "${etapa?.nome}" tem ${afetados.length} negócio${afetados.length>1?'s':''}. Escolha para qual etapa eles devem ser movidos antes da etapa ser excluída.`;
+  const destino = document.getElementById('ee-destino');
+  destino.innerHTML = etapasOrd.filter(e=>e.id!==id).map(e=>`<option value="${e.id}">${e.nome}</option>`).join('');
+  document.getElementById('modal-excluir-etapa').classList.add('open');
+}
+
+async function confirmarExclusaoEtapa() {
+  const id = etapaParaExcluirId;
+  if (!id) return;
+  const destinoId = document.getElementById('ee-destino').value;
+  if (!destinoId) return alert('Escolha uma etapa de destino.');
+
+  const { idsGanho, idsPerdido } = limitesEtapas();
+  const update = { etapa_id: destinoId, ultima_atualizacao: new Date().toISOString() };
+  // Se o destino for Ganho ou Perdido, preenche as datas correspondentes —
+  // mesma lógica posicional usada no drag-and-drop (soltar()).
+  if (idsGanho.includes(destinoId))   update.data_fechamento = hoje();
+  if (idsPerdido.includes(destinoId)) update.data_perda = hoje();
+
+  const { error: eMove } = await sb.from('negocios').update(update).eq('etapa_id', id);
+  if (eMove) { alert('Não foi possível mover os negócios: ' + eMove.message); return; }
+
+  const { error: eDel } = await sb.from('etapas').delete().eq('id', id);
+  if (eDel) { alert('Negócios movidos, mas não foi possível excluir a etapa: ' + eDel.message); }
+
+  etapaParaExcluirId = null;
+  fecharModal('excluir-etapa');
+  await carregarEtapas(); await carregarNegocios();
   atualizarSelectEtapas(); atualizarFiltroEtapas();
-  renderConfigEtapas(); renderView();
+  renderConfigEtapas(); renderView(); renderDashboard(); atualizarKPIs();
 }
 
 function renderConfigCampos() {
@@ -2167,6 +2286,16 @@ async function adicionarOpcao(id) {
 async function removerOpcao(id, indice) {
   const campo = camposCustom.find(c => c.id === id);
   if (!campo) return;
+  const valorRemovido = (campo.opcoes || [])[indice];
+  const emUso = negocios.filter(n => (n.campos_valores||{})[id] === valorRemovido).length;
+  if (emUso > 0) {
+    const ok = confirm(
+      `A opção "${valorRemovido}" está em uso em ${emUso} negócio${emUso>1?'s':''}.\n\n` +
+      `Remover essa opção vai apagar esse valor desses negócios — o campo aparecerá vazio ("Selecionar…") até ser preenchido de novo. Essa alteração é imediata e não pode ser desfeita pelo sistema.\n\n` +
+      `Deseja continuar mesmo assim?`
+    );
+    if (!ok) return;
+  }
   const opcoes = (campo.opcoes || []).filter((_, i) => i !== indice);
   await sb.from('campos_custom').update({ opcoes }).eq('id', id);
   await carregarCampos();
@@ -2197,9 +2326,56 @@ async function adicionarCampo() {
   renderConfigCampos(); renderView(); renderDashboard();
 }
 
+let campoParaExcluirId = null;
+
 async function excluirCampo(id) {
-  if (!confirm('Excluir este campo?')) return;
-  await sb.from('campos_custom').delete().eq('id',id);
+  const campo = camposCustom.find(c=>c.id===id);
+  const afetados = negocios.filter(n => {
+    const v = (n.campos_valores||{})[id];
+    return v !== undefined && v !== null && v !== '';
+  });
+
+  if (afetados.length === 0) {
+    if (!confirm(`Excluir o campo "${campo?.nome}"? Nenhum negócio tem esse campo preenchido.`)) return;
+    await sb.from('campos_custom').delete().eq('id',id);
+    await carregarCampos();
+    renderConfigCampos(); renderView(); renderDashboard();
+    return;
+  }
+
+  campoParaExcluirId = id;
+  document.getElementById('ec-texto').textContent =
+    `O campo "${campo?.nome}" está preenchido em ${afetados.length} negócio${afetados.length>1?'s':''}. Como deseja tratar essas informações antes de excluir o campo?`;
+  document.getElementById('modal-excluir-campo').classList.add('open');
+}
+
+async function confirmarExclusaoCampo(preservarComoNota) {
+  const id = campoParaExcluirId;
+  if (!id) return;
+  const campo = camposCustom.find(c=>c.id===id);
+  const afetados = negocios.filter(n => {
+    const v = (n.campos_valores||{})[id];
+    return v !== undefined && v !== null && v !== '';
+  });
+
+  if (preservarComoNota) {
+    // Grava o valor antigo como nota em cada negócio afetado, pra não perder
+    // a informação quando o campo (e o histórico dele) deixar de existir.
+    for (const n of afetados) {
+      const valor = (n.campos_valores||{})[id];
+      await sb.from('notas').insert({
+        negocio_id: n.id,
+        empresa_id: empresaAtual.id,
+        texto: `[Campo "${campo?.nome}" excluído] Valor anterior: ${valor}`,
+      });
+    }
+  }
+
+  const { error } = await sb.from('campos_custom').delete().eq('id',id);
+  if (error) { alert('Não foi possível excluir o campo: ' + error.message); return; }
+
+  campoParaExcluirId = null;
+  fecharModal('excluir-campo');
   await carregarCampos();
   renderConfigCampos(); renderView(); renderDashboard();
 }
@@ -2214,13 +2390,13 @@ async function salvarConfigEmpresa() {
 // IMPORT / EXPORT
 // ═══════════════════════════════════════════════════════
 function exportarCSV() {
-  const cols = ['titulo','contato_nome','contato_empresa','contato_telefone','contato_email','etapa','valor','valor_fechado','data_fechamento','motivo_perda','data_perda','origem'];
+  const cols = ['titulo','contato_nome','contato_empresa','contato_telefone','contato_email','etapa','valor','prioridade','valor_fechado','data_fechamento','motivo_perda','data_perda'];
   const customCols = camposCustom.map(c=>c.nome);
   const header = [...cols, ...customCols];
   const rows = negocios.map(n => {
     const etapa = etapas.find(e=>e.id===n.etapa_id);
     const base  = [n.titulo,n.contato_nome||'',n.contato_empresa||'',n.contato_telefone||'',n.contato_email||'',
-                   etapa?.nome||'',n.valor||0,n.valor_fechado||'',n.data_fechamento||'',n.motivo_perda||'',n.data_perda||'',n.origem||''];
+                   etapa?.nome||'',n.valor||0,n.prioridade||'media',n.valor_fechado||'',n.data_fechamento||'',n.motivo_perda||'',n.data_perda||''];
     const cv = n.campos_valores||{};
     const custom = camposCustom.map(c=>cv[c.id]||'');
     return [...base,...custom];
@@ -2234,13 +2410,13 @@ function exportarCSV() {
 
 function exportarTabelaFiltrada() {
   const lista = negociosTabelaFiltrados();
-  const cols = ['titulo','contato_nome','contato_empresa','contato_telefone','contato_email','etapa','valor','valor_fechado','data_fechamento','motivo_perda','data_perda','origem'];
+  const cols = ['titulo','contato_nome','contato_empresa','contato_telefone','contato_email','etapa','valor','prioridade','valor_fechado','data_fechamento','motivo_perda','data_perda'];
   const customCols = camposCustom.map(c=>c.nome);
   const header = [...cols, ...customCols];
   const rows = lista.map(n => {
     const etapa = etapas.find(e=>e.id===n.etapa_id);
     const base  = [n.titulo,n.contato_nome||'',n.contato_empresa||'',n.contato_telefone||'',n.contato_email||'',
-                   etapa?.nome||'',n.valor||0,n.valor_fechado||'',n.data_fechamento||'',n.motivo_perda||'',n.data_perda||'',n.origem||''];
+                   etapa?.nome||'',n.valor||0,n.prioridade||'media',n.valor_fechado||'',n.data_fechamento||'',n.motivo_perda||'',n.data_perda||''];
     const cv = n.campos_valores||{};
     const custom = camposCustom.map(c=>cv[c.id]||'');
     return [...base,...custom];
@@ -2280,9 +2456,9 @@ async function importarCSV(event) {
       contato_telefone: l[header.indexOf('contato_telefone')]||null,
       contato_email:    l[header.indexOf('contato_email')]||null,
       valor:            parseFloat(l[header.indexOf('valor')])||0,
+      prioridade:       ['baixa','media','alta'].includes((l[header.indexOf('prioridade')]||'').trim().toLowerCase()) ? l[header.indexOf('prioridade')].trim().toLowerCase() : 'media',
       valor_fechado:    parseFloat(l[header.indexOf('valor_fechado')])||null,
       data_fechamento:  l[header.indexOf('data_fechamento')]||null,
-      origem:           l[header.indexOf('origem')]||null,
       motivo_perda:     l[header.indexOf('motivo_perda')]||null,
       data_perda:       l[header.indexOf('data_perda')]||null,
       etapa_id:         (etapaMatch || etapaPadrao)?.id || null,
@@ -2470,8 +2646,7 @@ async function carregarDadosTeste() {
     var nomes = ["Maria Silva","Joao Costa","Ana Oliveira","Pedro Santos","Carla Souza","Rafael Lima","Fernanda Rocha","Bruno Alves","Juliana Neves","Diego Martins","Camila Ferreira","Lucas Barbosa","Patricia Gomes","Thiago Araujo","Larissa Dias","Marcelo Cardoso","Renata Pereira","Felipe Ribeiro","Amanda Correia","Rodrigo Mendes"];
     var emps  = ["Costa Moda","Tech Solucoes","Clinica Saude","Construtora DS","Cafe Aroma","Grupo Estrela","Distribuidora Alfa","Studio Creative","Auto Pecas BR","Farm Fresh","RH Consultores","Legal Cia","MedCenter","LogiRapido","EduPlus","Varejo Agil","Industria Nova","Serv Master","DataPrime","Agro Sul"];
     var tits  = ["Implantacao comercial","Estruturacao de vendas","Consultoria comercial","Playbook de vendas","Diagnostico comercial","Treinamento de time","Reestruturacao do funil","Acompanhamento mensal","Setup de CRM","Mapeamento de processo"];
-    var cargos= ["CEO","Diretor Comercial","Gerente de Vendas","Head de Marketing","Socio-Fundador","Diretor Financeiro","Gerente Geral","Proprietario"];
-    var origs = ["Indicacao","Prospeccao ativa","Inbound","Evento","Rede social","Outro"];
+    var prios = ["baixa","media","media","alta"];
     var mots  = ["Preco","Concorrente","Prazo","Sem Budget","Nao e o decisor","Produto nao atende","Outros"];
     var vals  = [3000,4000,5000,6000,8000,10000,12000,15000,20000,25000,30000];
     var etns  = ["lead","lead","lead","qualificacao","qualificacao","negociacao","negociacao","ganho","ganho","perdido","perdido"];
@@ -2489,10 +2664,9 @@ async function carregarDadosTeste() {
         contato_nome:r(nomes), contato_empresa:r(emps),
         contato_telefone:'41 9'+Math.floor(7000+Math.random()*2999)+'-'+Math.floor(1000+Math.random()*8999),
         contato_email:'contato'+i+'@empresa.com.br',
-        contato_cargo:r(cargos),
         valor:valor,
+        prioridade:r(prios),
         valor_fechado:isGanho?Math.round(valor*(.85+Math.random()*.25)):null,
-        origem:r(origs),
         motivo_perda:isPerdido?r(mots):null,
         data_entrada:rDate(365,0),
         data_fechamento:isGanho?rDate(300,7):null,
@@ -2520,8 +2694,8 @@ async function carregarDadosTeste() {
         owner_id:(usuariosEmpresa && usuariosEmpresa.length) ? usuariosEmpresa[Math.floor(Math.random()*usuariosEmpresa.length)].id : (perfil?.id||null),
         contato_nome:n.contato_nome, contato_empresa:n.contato_empresa,
         contato_telefone:n.contato_telefone, contato_email:n.contato_email,
-        contato_cargo:n.contato_cargo, valor:n.valor,
-        valor_fechado:n.valor_fechado, origem:n.origem,
+        valor:n.valor, prioridade:n.prioridade,
+        valor_fechado:n.valor_fechado,
         motivo_perda:n.motivo_perda,
         data_entrada:n.data_entrada, data_fechamento:n.data_fechamento, data_perda:n.data_perda,
         campos_valores:n.campos_valores,
