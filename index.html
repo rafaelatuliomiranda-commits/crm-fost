@@ -1365,6 +1365,34 @@ function renderDashboard() {
     + '</div></div>'
   ) : '';
 
+  // ── Receita prevista — pipeline em aberto por mês de entrada ──────────
+  var previstoMes = {};
+  abertos.filter(function(n){return n.data_entrada;}).forEach(function(n){
+    var mes = n.data_entrada.slice(0,7);
+    previstoMes[mes] = (previstoMes[mes]||0) + (n.valor||0);
+  });
+  var mesesP = Object.keys(previstoMes).sort().slice(-8);
+  var dadosMesP = mesesP.map(function(m){
+    var d = new Date(m+'-01');
+    var lbl = d.toLocaleString('pt-BR',{month:'short'}).replace('.','');
+    var val = previstoMes[m];
+    return {label:lbl, v:val, vLabel: val>=1000 ? 'R$'+(val/1000).toFixed(0)+'k' : 'R$'+val};
+  });
+  var totalPrevisto = abertos.reduce(function(s,n){return s+(n.valor||0);},0);
+  var ticketMedioPrevisto = abertos.length ? Math.round(totalPrevisto/abertos.length) : 0;
+
+  var graficoPrevisto = dadosMesP.length >= 2 ? (
+    '<div class="dash-metricas-wrap" style="grid-column:1/-1">'
+    + '<div class="dash-metricas-titulo">Receita prevista — Pipeline em aberto por mês de entrada</div>'
+    + barrasHtml(dadosMesP, mesAtualLabel)
+    + '<div class="dash-metricas-kpis">'
+    + '<div><div class="dash-mkpi-label">Total em aberto</div><div class="dash-mkpi-val cyan">'+fR(totalPrevisto)+'</div></div>'
+    + '<div><div class="dash-mkpi-label">Negócios abertos</div><div class="dash-mkpi-val">'+abertos.length+'</div></div>'
+    + '<div><div class="dash-mkpi-label">Ticket médio</div><div class="dash-mkpi-val">'+fR(ticketMedioPrevisto)+'</div></div>'
+    + '<div></div>'
+    + '</div></div>'
+  ) : '';
+
   // ── Pizza de origem ───────────────────────────────────────────────────
   const origMap = {};
   lista.filter(n=>n.origem).forEach(n=>{ origMap[n.origem]=(origMap[n.origem]||0)+1; });
@@ -1373,6 +1401,7 @@ function renderDashboard() {
   container.innerHTML = `
     <div class="dash-grid" style="margin-top:2px">
       ${graficoMensal}
+      ${graficoPrevisto}
       <div class="dash-card">
         <div class="dash-card-title">Negócios por origem</div>
         ${svgPizza(dadosOrig)}
@@ -2200,6 +2229,27 @@ function exportarCSV() {
   const a = document.createElement('a');
   a.href = 'data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
   a.download = `negocios-${empresaAtual.nome.replace(/\s+/g,'-')}.csv`;
+  a.click();
+}
+
+function exportarTabelaFiltrada() {
+  const lista = negociosTabelaFiltrados();
+  const cols = ['titulo','contato_nome','contato_empresa','contato_telefone','contato_email','etapa','valor','valor_fechado','data_fechamento','motivo_perda','data_perda','origem'];
+  const customCols = camposCustom.map(c=>c.nome);
+  const header = [...cols, ...customCols];
+  const rows = lista.map(n => {
+    const etapa = etapas.find(e=>e.id===n.etapa_id);
+    const base  = [n.titulo,n.contato_nome||'',n.contato_empresa||'',n.contato_telefone||'',n.contato_email||'',
+                   etapa?.nome||'',n.valor||0,n.valor_fechado||'',n.data_fechamento||'',n.motivo_perda||'',n.data_perda||'',n.origem||''];
+    const cv = n.campos_valores||{};
+    const custom = camposCustom.map(c=>cv[c.id]||'');
+    return [...base,...custom];
+  });
+  if (!rows.length) return alert('Nenhum negócio na visão atual para exportar.');
+  const csv = [header,...rows].map(r=>r.map(v=>'"'+String(v||'').replace(/"/g,'""')+'"').join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
+  a.download = `negocios-visao-atual-${empresaAtual.nome.replace(/\s+/g,'-')}.csv`;
   a.click();
 }
 
