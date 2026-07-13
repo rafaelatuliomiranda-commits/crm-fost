@@ -31,7 +31,10 @@
 <title>CRM — fost</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- Versão fixada deliberadamente (não "@2" flutuante) — atualizações do SDK
+     passam a exigir troca manual desse número, revisando o changelog antes,
+     em vez de mudar sozinho em produção sem ninguém perceber. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.2"></script>
 <style>
 :root{
   --navy:#06006e;--purple:#7B2FFF;--ps:#9B59FF;--cyan:#00D4FF;
