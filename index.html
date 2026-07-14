@@ -814,10 +814,15 @@ tbody tr:hover td{background:rgba(123,47,255,.06);}
       <!-- Import/Export dentro das configurações -->
       <div class="config-card" style="margin-bottom:14px">
         <div class="config-card-title">Importar / Exportar</div>
+        <div style="font-size:11px;color:var(--dim);margin-bottom:10px">
+          Use os 3 botões de exportar se um cliente quiser levar todos os dados dele pra outro sistema — juntos, cobrem negócios (com campos personalizados), atividades e notas dessa empresa.
+        </div>
         <div class="ie-grid" style="margin-bottom:12px">
           <div class="ie-card">
             <div class="ie-title">Exportar</div>
             <button class="btn-add" onclick="exportarCSV('negocios')">Exportar Negócios CSV</button>
+            <button class="btn-add" onclick="exportarCSV('atividades')" style="margin-top:8px">Exportar Atividades CSV</button>
+            <button class="btn-add" onclick="exportarCSV('notas')" style="margin-top:8px">Exportar Notas CSV</button>
           </div>
           <div class="ie-card">
             <div class="ie-title">Importar</div>
@@ -2579,7 +2584,10 @@ async function salvarConfigEmpresa() {
 // ═══════════════════════════════════════════════════════
 // IMPORT / EXPORT
 // ═══════════════════════════════════════════════════════
-function exportarCSV() {
+async function exportarCSV(tipo) {
+  if (tipo === 'atividades') return exportarAtividadesCSV();
+  if (tipo === 'notas') return exportarNotasCSV();
+  // padrão / 'negocios': mantém o comportamento original
   const cols = ['titulo','contato_nome','contato_empresa','contato_telefone','contato_email','etapa','valor','prioridade','valor_fechado','data_fechamento','motivo_perda','data_perda'];
   const customCols = camposCustom.map(c=>c.nome);
   const header = [...cols, ...customCols];
@@ -2591,10 +2599,39 @@ function exportarCSV() {
     const custom = camposCustom.map(c=>cv[c.id]||'');
     return [...base,...custom];
   });
+  baixarCSV(header, rows, `negocios-${empresaAtual.nome.replace(/\s+/g,'-')}.csv`);
+}
+
+function exportarAtividadesCSV() {
+  const header = ['negocio','titulo','tipo','data','concluida','observacoes'];
+  const rows = atividades.map(a => {
+    const negocio = negocios.find(n=>n.id===a.negocio_id);
+    return [negocio?.titulo||'', a.titulo||'', a.tipo||'', a.data||'', a.concluida ? 'sim' : 'não', a.observacoes||''];
+  });
+  if (!rows.length) return alert('Nenhuma atividade pra exportar nessa empresa.');
+  baixarCSV(header, rows, `atividades-${empresaAtual.nome.replace(/\s+/g,'-')}.csv`);
+}
+
+async function exportarNotasCSV() {
+  // Notas não ficam num array global (só são carregadas quando um negócio
+  // específico é aberto) — busca todas de uma vez direto no banco, já
+  // trazendo o título do negócio junto pra dar contexto na planilha.
+  const { data, error } = await sb.from('notas')
+    .select('texto, negocios(titulo)')
+    .eq('empresa_id', empresaAtual.id)
+    .order('id', { ascending: true });
+  if (error) return alert('Não foi possível buscar as notas: ' + error.message);
+  if (!data || !data.length) return alert('Nenhuma nota pra exportar nessa empresa.');
+  const header = ['negocio','texto'];
+  const rows = data.map(n => [n.negocios?.titulo||'(negócio excluído)', n.texto||'']);
+  baixarCSV(header, rows, `notas-${empresaAtual.nome.replace(/\s+/g,'-')}.csv`);
+}
+
+function baixarCSV(header, rows, nomeArquivo) {
   const csv = [header,...rows].map(r=>r.map(v=>'"'+String(v||'').replace(/"/g,'""')+'"').join(',')).join('\n');
   const a = document.createElement('a');
   a.href = 'data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
-  a.download = `negocios-${empresaAtual.nome.replace(/\s+/g,'-')}.csv`;
+  a.download = nomeArquivo;
   a.click();
 }
 
