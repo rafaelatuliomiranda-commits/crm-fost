@@ -703,6 +703,16 @@ tbody tr:hover td{background:rgba(123,47,255,.06);}
     <div style="font-size:11px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.1em">Lista</div>
     <div style="flex:1"></div>
     <select class="tselect" id="filtro-atv-responsavel" style="display:none" onchange="filtroResponsavelId=this.value;renderAtividades()"></select>
+    <select class="tselect" id="filtro-atv-tipo" onchange="renderAtividades()">
+      <option value="">Todos os tipos</option>
+      <option value="follow-up">Follow-up</option>
+      <option value="proposta">Proposta</option>
+      <option value="email">E-mail</option>
+      <option value="reuniao">Reunião</option>
+      <option value="ligacao">Ligação</option>
+      <option value="recado">Recado</option>
+      <option value="outro">Outro</option>
+    </select>
     <select class="tselect" id="filtro-atv" onchange="renderAtividades()">
       <option value="">Todas</option>
       <option value="pendente">Pendentes</option>
@@ -1291,6 +1301,7 @@ async function selecionarCliente(empId, manual = true) {
     // No auto-restore após um F5, queremos voltar exatamente onde a pessoa
     // estava, não forçar de volta pro Início.
     filtroPipeSemResponsavel = false;
+    filtroResponsavelId = '';
     filtrosKanban = {};
     filtrosCustom = {};
     msfPainelAberto = null;
@@ -1298,6 +1309,7 @@ async function selecionarCliente(empId, manual = true) {
     const elEstag = document.getElementById('pipe-filtro-estagnado'); if (elEstag) elEstag.value = '';
     const elEtapaF = document.getElementById('pipe-filtro-etapa'); if (elEtapaF) elEtapaF.value = '';
     const elPrioF = document.getElementById('pipe-filtro-prioridade'); if (elPrioF) elPrioF.value = '';
+    const elTipoAtv = document.getElementById('filtro-atv-tipo'); if (elTipoAtv) elTipoAtv.value = '';
     switchTab('inicio');
   }
   await abrirApp();
@@ -2259,11 +2271,13 @@ async function excluirNegocio() {
 // ═══════════════════════════════════════════════════════
 function renderAtividades() {
   const filtro = document.getElementById('filtro-atv').value;
+  const fTipo  = document.getElementById('filtro-atv-tipo').value;
   const h = hoje();
   let lista = [...atividades];
   if (filtro==='pendente')  lista = lista.filter(a=>!a.concluida);
   if (filtro==='concluida') lista = lista.filter(a=>a.concluida);
   if (filtro==='atrasada')  lista = lista.filter(a=>!a.concluida&&a.data<h);
+  if (fTipo) lista = lista.filter(a=>a.tipo===fTipo);
   if (empresaAtual?.recados_habilitado && filtroResponsavelId) {
     lista = lista.filter(a=>a.responsavel_id===filtroResponsavelId);
   }
