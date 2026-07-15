@@ -624,8 +624,8 @@ tbody tr:hover td{background:rgba(123,47,255,.06);}
       <input type="date" id="dash-data-fim" class="tsearch" style="width:140px" onchange="aplicarFiltroDash()">
     </div>
     <div id="dash-periodo-label" style="font-size:11px;color:var(--cyan);font-weight:600"></div>
+    <select class="tselect" id="dash-filtro-responsavel" style="display:none" onchange="filtroResponsavelId=this.value;atualizarKPIs();renderDashboard()"></select>
   </div>
-  <div id="dash-filtros-custom" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px"></div>
   <div class="dash-grid">
     <div class="dash-card">
       <div class="dash-card-title">Negócios por etapa</div>
@@ -662,6 +662,7 @@ tbody tr:hover td{background:rgba(123,47,255,.06);}
       <option value="media">Prioridade média</option>
       <option value="baixa">Prioridade baixa</option>
     </select>
+    <select class="tselect" id="tabela-filtro-responsavel" style="display:none" onchange="filtroResponsavelId=this.value;renderView()"></select>
     <select class="tselect" id="pipe-ordem" onchange="renderView()">
       <option value="criado_em_desc">Mais recentes</option>
       <option value="valor_desc">Maior valor</option>
@@ -689,6 +690,10 @@ tbody tr:hover td{background:rgba(123,47,255,.06);}
 
 <!-- ATIVIDADES -->
 <div class="tab-section" id="sec-atividades">
+  <div id="barra-recado" class="toolbar" style="display:none;margin-bottom:8px">
+    <input type="text" id="recado-texto" placeholder="Rafa, amanhã reunião com a Paola às 11:30 no HAC" style="flex:1" onkeydown="if(event.key==='Enter')abrirConfirmacaoRecado()">
+    <button class="btn-add" onclick="abrirConfirmacaoRecado()">Enviar</button>
+  </div>
   <div class="cal-wrap">
     <div class="cal-header">
       <button class="cal-nav" onclick="navSemana(-1)">&#8592; Anterior</button>
@@ -701,6 +706,7 @@ tbody tr:hover td{background:rgba(123,47,255,.06);}
   <div class="toolbar" style="margin-top:8px">
     <div style="font-size:11px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.1em">Lista</div>
     <div style="flex:1"></div>
+    <select class="tselect" id="filtro-atv-responsavel" style="display:none" onchange="filtroResponsavelId=this.value;renderAtividades()"></select>
     <select class="tselect" id="filtro-atv" onchange="renderAtividades()">
       <option value="">Todas</option>
       <option value="pendente">Pendentes</option>
@@ -810,6 +816,29 @@ tbody tr:hover td{background:rgba(123,47,255,.06);}
             <span class="slider"></span>
           </label>
         </div>
+        <div class="toggle-row" style="border-bottom:none">
+          <span class="toggle-label">Habilitar recados (atividades por mensagem)</span>
+          <label class="toggle">
+            <input type="checkbox" id="cfg-recados-habilitado" onchange="salvarRecadosHabilitado()">
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div id="cfg-recados-aviso-permissao" style="display:none;font-size:11px;color:var(--dim);margin-top:6px">
+          Só a fost pode habilitar essa função para sua empresa.
+        </div>
+      </div>
+
+      <div class="config-card" id="card-responsaveis" style="margin-bottom:14px;display:none">
+        <div class="config-card-title">Responsáveis</div>
+        <div style="font-size:11px;color:var(--dim);margin-bottom:10px">
+          Pessoas que podem receber recados por mensagem — não precisam ter login no sistema, recebem um e-mail quando algo é endereçado a elas.
+        </div>
+        <div id="config-responsaveis-list" style="margin-bottom:12px"></div>
+        <div class="field-row" style="margin-bottom:8px">
+          <div class="field" style="margin-bottom:0"><label>Nome *</label><input id="resp-nome" placeholder="Nome do responsável"></div>
+          <div class="field" style="margin-bottom:0"><label>E-mail *</label><input id="resp-email" type="email" placeholder="nome@empresa.com.br"></div>
+        </div>
+        <button class="btn-add" onclick="adicionarResponsavel()">+ Adicionar responsável</button>
       </div>
 
       <!-- Import/Export dentro das configurações -->
@@ -965,6 +994,35 @@ tbody tr:hover td{background:rgba(123,47,255,.06);}
   </div>
 </div>
 
+<!-- MODAL CONFIRMAÇÃO DE RECADO -->
+<div class="modal-overlay" id="modal-confirma-recado" onclick="if(event.target===this)fecharModal('confirma-recado')">
+  <div class="modal">
+    <div class="modal-title">Confirmar recado</div>
+    <div id="rc-avisos" style="display:none;font-size:12px;color:var(--yellow);margin-bottom:10px;line-height:1.6"></div>
+    <div class="field-row">
+      <div class="field"><label>Responsável *</label><select id="rc-responsavel"></select></div>
+      <div class="field"><label>Ação</label>
+        <select id="rc-acao" onchange="atualizarCamposConfirmacaoRecado()">
+          <option value="atividade">Criar atividade</option>
+          <option value="ganho">Mover negócio para Ganho</option>
+          <option value="perdido">Mover negócio para Perdido</option>
+        </select>
+      </div>
+    </div>
+    <div id="rc-wrap-atividade">
+      <div class="field"><label>Título da atividade *</label><input id="rc-titulo"></div>
+      <div class="field"><label>Data *</label><input id="rc-data" type="date"></div>
+    </div>
+    <div id="rc-wrap-negocio" style="display:none">
+      <div class="field"><label>Negócio *</label><select id="rc-negocio"></select></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="fecharModal('confirma-recado')">Cancelar</button>
+      <button class="btn-save" onclick="confirmarRecado()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: EXCLUIR ETAPA EM USO -->
 <div class="modal-overlay" id="modal-excluir-etapa" onclick="if(event.target===this)fecharModal('excluir-etapa')">
   <div class="modal" style="width:460px">
@@ -1052,12 +1110,15 @@ let etapas       = [];
 let camposCustom = [];
 let negocios     = [];
 let atividades   = [];
+let responsaveis = []; // pessoas endereçáveis em atividades — não são login do sistema
+let responsavelIdSouEu = null; // id em `responsaveis` cujo e-mail bate com o do usuário logado
+let filtroResponsavelId = ''; // usado em Atividades, Relatório e Resultados
+let recadoInterpretado = null; // resultado do parser, aguardando confirmação
 let viewAtual    = 'kanban';
 let arrastando   = null;
 let sortCol      = null;
 let sortDir      = 1;
 let filtrosCustom = {};
-let filtrosDash = {};
 let buscaDebounceTimer = null;
 let dashDataIni  = null;
 let dashDataFim  = null;
@@ -1080,6 +1141,23 @@ function esc(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+// Executa as funções que redesenham as telas depois de uma mudança em
+// negócios, cada uma isolada em try/catch. Antes, essas chamadas rodavam
+// em sequência sem proteção — se uma travasse no meio (ex: renderView()
+// com algum estado inconsistente), as seguintes nunca chegavam a rodar,
+// incluindo atualizarKPIs()/renderDashboard() (aba Resultados), que ficava
+// parada até a próxima recarga completa da página.
+function atualizarTelasNegocios(opts) {
+  opts = opts || {};
+  const passos = [];
+  if (opts.configEtapas) passos.push(['Config. de etapas', renderConfigEtapas]);
+  passos.push(['Kanban/Tabela', renderView], ['KPIs', atualizarKPIs], ['Resultados', renderDashboard]);
+  if (opts.atividades) passos.push(['Atividades', renderAtividades], ['Calendário', renderCalendario]);
+  passos.forEach(([nome, fn]) => {
+    try { fn(); } catch (e) { console.error('Erro ao redesenhar ' + nome + ':', e); }
+  });
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1203,7 +1281,6 @@ async function selecionarCliente(empId, manual = true) {
     filtroPipeSemResponsavel = false;
     filtrosKanban = {};
     filtrosCustom = {};
-    filtrosDash = {};
     msfPainelAberto = null;
     const elBusca = document.getElementById('pipe-busca'); if (elBusca) elBusca.value = '';
     const elEstag = document.getElementById('pipe-filtro-estagnado'); if (elEstag) elEstag.value = '';
@@ -1283,11 +1360,26 @@ async function carregarTudo() {
   }
 
   try {
+    // Toggle "Habilitar recados" — só super_admin liga/desliga (reforçado
+    // também no banco, ver 005_recados.sql). Admin/vendedor só veem o estado.
+    const elRecados = document.getElementById('cfg-recados-habilitado');
+    if (elRecados && empresaAtual) {
+      elRecados.checked = !!empresaAtual.recados_habilitado;
+      elRecados.disabled = perfil?.papel !== 'super_admin';
+    }
+    const elAviso = document.getElementById('cfg-recados-aviso-permissao');
+    if (elAviso) elAviso.style.display = perfil?.papel === 'super_admin' ? 'none' : '';
+  } catch (e) {
+    console.error('Erro ao preparar toggle de recados:', e);
+  }
+
+  try {
     await Promise.all([
       carregarEtapas(),
       carregarCampos(),
       carregarNegocios(),
       carregarAtividades(),
+      carregarResponsaveis(),
     ]);
     atualizarSelectEtapas();
     atualizarFiltroEtapas();
@@ -1298,6 +1390,9 @@ async function carregarTudo() {
     atualizarKPIs();
     renderConfigEtapas();
     renderConfigCampos();
+    renderConfigResponsaveis();
+    atualizarFiltrosResponsavel();
+    atualizarVisibilidadeRecados();
   } catch (e) {
     console.error('Erro ao carregar dados do CRM:', e);
   }
@@ -1339,8 +1434,26 @@ async function carregarNegocios() {
 }
 
 async function carregarAtividades() {
-  const { data } = await sb.from('atividades').select('*, negocio:negocios(titulo)').eq('empresa_id', empresaAtual.id).order('data');
+  const { data } = await sb.from('atividades').select('*, negocio:negocios(titulo), responsavel:responsaveis(nome,email)').eq('empresa_id', empresaAtual.id).order('data');
   atividades = data || [];
+}
+
+async function carregarResponsaveis() {
+  responsaveis = [];
+  responsavelIdSouEu = null;
+  if (!empresaAtual?.recados_habilitado) return;
+  const { data, error } = await sb.from('responsaveis').select('*').eq('empresa_id', empresaAtual.id).eq('ativo', true).order('nome');
+  if (error) { console.error('Erro ao carregar responsáveis:', error); return; }
+  responsaveis = data || [];
+  // Cruzamento: se o e-mail de login da pessoa bater com o e-mail de algum
+  // responsável cadastrado, os recados endereçados a esse responsável
+  // aparecem destacados como "pra mim" — só é possível comparar o PRÓPRIO
+  // e-mail (usuarioAtual.email), nunca o de outros usuários, porque o
+  // e-mail de terceiros não fica acessível no navegador (vive em
+  // auth.users, não em perfis).
+  const meuEmail = (usuarioAtual?.email || '').toLowerCase().trim();
+  const match = meuEmail ? responsaveis.find(r => (r.email||'').toLowerCase().trim() === meuEmail) : null;
+  responsavelIdSouEu = match ? match.id : null;
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1373,7 +1486,6 @@ function atualizarKPIs() {
 // DASHBOARD
 // ═══════════════════════════════════════════════════════
 function renderDashboard() {
-  renderFiltrosDash();
   const lista      = negociosDash();
   const etapasOrd  = [...etapas].sort((a,b)=>a.ordem-b.ordem);
   const idsFinal   = etapasOrd.slice(-2).map(e=>e.id);
@@ -1546,11 +1658,22 @@ function negociosFiltrados() {
   const ordem      = document.getElementById('pipe-ordem').value;
   const agora      = new Date();
 
+  // Responsável filtra negócios de forma indireta: a coluna vive em
+  // atividades, não em negócios — um negócio passa se tiver ao menos uma
+  // atividade endereçada a essa pessoa.
+  let negIdsComResponsavel = null;
+  if (empresaAtual?.recados_habilitado && filtroResponsavelId) {
+    negIdsComResponsavel = new Set(
+      atividades.filter(a=>a.responsavel_id===filtroResponsavelId && a.negocio_id).map(a=>a.negocio_id)
+    );
+  }
+
   let lista = [...negocios].filter(n => {
     if (busca && !n.titulo.toLowerCase().includes(busca) && !(n.contato_nome||'').toLowerCase().includes(busca) && !(n.contato_empresa||'').toLowerCase().includes(busca)) return false;
     if (fEtapa && n.etapa_id !== fEtapa) return false;
     if (fPrioridade && (n.prioridade||'media') !== fPrioridade) return false;
     if (filtroPipeSemResponsavel && n.owner_id) return false;
+    if (negIdsComResponsavel && !negIdsComResponsavel.has(n.id)) return false;
     // Filtro estagnados: só negócios em etapas com alerta configurado e além do limite
     if (fEstagnado === 'estagnado') {
       const etapa = etapas.find(e=>e.id===n.etapa_id);
@@ -1649,7 +1772,7 @@ function renderFiltroMultiHtml(c, store, contexto, rerenderFn) {
   const panelId = `msf-panel-${contexto}-${c.id}`;
   const btnId   = `msf-btn-${contexto}-${c.id}`;
   const aberto  = msfPainelAberto === panelId;
-  const storeExpr = contexto==='kanban' ? 'filtrosKanban' : contexto==='dashboard' ? 'filtrosDash' : 'filtrosCustom';
+  const storeExpr = contexto==='kanban' ? 'filtrosKanban' : 'filtrosCustom';
   return `<div class="msf-wrap">
     <button type="button" id="${btnId}" class="msf-btn ${sel.length?'ativo':''}" onclick="event.stopPropagation();toggleMsfPanel('${panelId}')">
       ${esc(c.nome)}: ${label} ▾
@@ -1882,7 +2005,7 @@ async function soltar(etapaId) {
   const { error } = await sb.from('negocios').update(update).eq('id', id);
   if (error) { alert('Não foi possível mover o negócio: ' + error.message); return; }
   await carregarNegocios();
-  renderView(); atualizarKPIs(); renderDashboard();
+  atualizarTelasNegocios();
 }
 
 async function excluirNegRapido(id) {
@@ -1892,7 +2015,7 @@ async function excluirNegRapido(id) {
   const { error } = await sb.from('negocios').delete().eq('id', id);
   if (error) return alert('Não foi possível excluir: ' + error.message);
   await carregarNegocios(); await carregarAtividades();
-  renderView(); atualizarKPIs(); renderDashboard(); renderAtividades(); renderCalendario();
+  atualizarTelasNegocios({atividades:true});
 }
 
 // ═══════════════════════════════════════════════════════
@@ -2104,7 +2227,7 @@ async function salvarNegocio() {
   }
   fecharModal('negocio');
   await carregarNegocios();
-  renderView(); atualizarKPIs(); renderDashboard();
+  atualizarTelasNegocios();
 }
 
 async function excluirNegocio() {
@@ -2116,7 +2239,7 @@ async function excluirNegocio() {
   if (error) return alert('Não foi possível excluir: ' + error.message);
   fecharModal('negocio');
   await carregarNegocios(); await carregarAtividades();
-  renderView(); atualizarKPIs(); renderDashboard(); renderAtividades(); renderCalendario();
+  atualizarTelasNegocios({atividades:true});
 }
 
 // ═══════════════════════════════════════════════════════
@@ -2129,9 +2252,17 @@ function renderAtividades() {
   if (filtro==='pendente')  lista = lista.filter(a=>!a.concluida);
   if (filtro==='concluida') lista = lista.filter(a=>a.concluida);
   if (filtro==='atrasada')  lista = lista.filter(a=>!a.concluida&&a.data<h);
+  if (empresaAtual?.recados_habilitado && filtroResponsavelId) {
+    lista = lista.filter(a=>a.responsavel_id===filtroResponsavelId);
+  }
   const el = document.getElementById('lista-atividades');
   if (!lista.length) { el.innerHTML='<div class="empty-state">Nenhuma atividade encontrada.</div>'; return; }
-  el.innerHTML = lista.map(a=>`
+  el.innerHTML = lista.map(a=>{
+    const souEu = responsavelIdSouEu && a.responsavel_id === responsavelIdSouEu;
+    const badge = a.responsavel?.nome
+      ? `<span style="font-size:10px;font-weight:700;color:${souEu?'var(--green)':'var(--cyan)'};background:${souEu?'rgba(52,211,153,.08)':'rgba(0,212,255,.08)'};border:1px solid ${souEu?'rgba(52,211,153,.25)':'rgba(0,212,255,.25)'};border-radius:4px;padding:2px 8px;white-space:nowrap">${souEu?'Pra mim':'Para: '+esc(a.responsavel.nome)}</span>`
+      : '';
+    return `
     <div class="ativ-item" style="margin-bottom:8px">
       <input type="checkbox" class="ativ-check" ${a.concluida?'checked':''} onchange="toggleAtivGlobal('${a.id}',this.checked)">
       <div class="ativ-body">
@@ -2141,11 +2272,12 @@ function renderAtividades() {
           ${a.negocio?` · <span style="color:var(--cyan)">${esc(a.negocio.titulo)}</span>`:''}
         </div>
       </div>
+      ${badge}
       <button class="icon-btn" onclick="abrirModalAtividade('${a.id}')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
       </button>
       <button class="ativ-del" onclick="delAtivGlobal('${a.id}')">×</button>
-    </div>`).join('');
+    </div>`;}).join('');
 }
 
 async function toggleAtivGlobal(id, concluida) {
@@ -2370,7 +2502,7 @@ async function confirmarExclusaoEtapa() {
   fecharModal('excluir-etapa');
   await carregarEtapas(); await carregarNegocios();
   atualizarSelectEtapas(); atualizarFiltroEtapas();
-  renderConfigEtapas(); renderView(); renderDashboard(); atualizarKPIs();
+  atualizarTelasNegocios({configEtapas:true});
 }
 
 function renderConfigCampos() {
@@ -2585,6 +2717,27 @@ async function salvarConfigEmpresa() {
   empresaAtual.vendedor_ve_todos = vvt;
 }
 
+// Só o super_admin consegue de fato alterar isso — o checkbox já vem
+// desabilitado na tela pra qualquer outro papel, e o trigger no banco
+// (005_recados.sql) barra mesmo uma chamada direta à API.
+async function salvarRecadosHabilitado() {
+  const el = document.getElementById('cfg-recados-habilitado');
+  const valor = el.checked;
+  const { error } = await sb.from('empresas').update({ recados_habilitado: valor }).eq('id', empresaAtual.id);
+  if (error) {
+    alert('Não foi possível alterar: ' + error.message);
+    el.checked = !valor;
+    return;
+  }
+  empresaAtual.recados_habilitado = valor;
+  await carregarResponsaveis();
+  await carregarAtividades();
+  renderConfigResponsaveis();
+  atualizarFiltrosResponsavel();
+  atualizarVisibilidadeRecados();
+  renderAtividades();
+}
+
 // ═══════════════════════════════════════════════════════
 // IMPORT / EXPORT
 // ═══════════════════════════════════════════════════════
@@ -2709,7 +2862,7 @@ async function importarCSV(event) {
   const { error } = await sb.from('negocios').insert(rows);
   if (error) { alert('Erro ao importar: ' + error.message); event.target.value=''; return; }
 
-  await carregarNegocios(); renderView(); atualizarKPIs(); renderDashboard();
+  await carregarNegocios(); atualizarTelasNegocios();
   alert(`${rows.length} negócios importados.`);
   event.target.value='';
 }
@@ -2951,7 +3104,7 @@ async function carregarDadosTeste() {
   }
 
   await carregarNegocios();
-  renderView(); atualizarKPIs(); renderDashboard();
+  atualizarTelasNegocios();
 
   // ── 30 atividades distribuídas: 8 atrasadas, 14 na semana, 8 futuras ──
   status.textContent = 'Inserindo 30 atividades de teste...';
@@ -3075,22 +3228,6 @@ function svgPizza(dados) {
     + '</div>';
 }
 
-function renderFiltrosDash() {
-  const wrap = document.getElementById('dash-filtros-custom');
-  if (!wrap) return;
-  const camposSel = camposCustom.filter(c=>c.tipo==='selecao'&&c.opcoes?.length);
-  if (!camposSel.length) { wrap.innerHTML=''; return; }
-  const temFiltro = Object.values(filtrosDash).some(v=>v && v.length);
-  wrap.innerHTML = camposSel.map(c=>renderFiltroMultiHtml(c, filtrosDash, 'dashboard', 'aplicarFiltroDash')).join('')
-    + (temFiltro ? `<button class="btn-sec" onclick="limparFiltrosDash()" style="color:var(--danger);border-color:rgba(255,107,107,.3)">✕ Limpar filtros</button>` : '');
-}
-
-function limparFiltrosDash() {
-  filtrosDash = {};
-  msfPainelAberto = null;
-  aplicarFiltroDash();
-}
-
 function negociosDash() {
   let lista = negocios;
   if (dashDataIni || dashDataFim) {
@@ -3101,11 +3238,12 @@ function negociosDash() {
       return true;
     });
   }
-  // Filtros de campos personalizados — mesma lógica "bate com qualquer opção
-  // marcada" usada no Kanban e na Tabela/Relatório do Pipeline.
-  Object.entries(filtrosDash).forEach(([cid, vals]) => {
-    if (vals && vals.length) lista = lista.filter(n=>vals.includes((n.campos_valores||{})[cid]));
-  });
+  if (empresaAtual?.recados_habilitado && filtroResponsavelId) {
+    const negIdsComResponsavel = new Set(
+      atividades.filter(a=>a.responsavel_id===filtroResponsavelId && a.negocio_id).map(a=>a.negocio_id)
+    );
+    lista = lista.filter(n => negIdsComResponsavel.has(n.id));
+  }
   return lista;
 }
 
@@ -3502,6 +3640,239 @@ async function removerUsuario(id) {
   const { error } = await sb.from('perfis').delete().eq('id', id).eq('empresa_id', empresaAtual.id);
   if (error) return alert('Não foi possível remover: ' + error.message);
   await carregarUsuariosEmpresa();
+}
+
+// ═══════════════════════════════════════════════════════
+// RESPONSÁVEIS — pessoas endereçáveis em recados, sem login.
+// Toda a seção é gated por empresas.recados_habilitado.
+// ═══════════════════════════════════════════════════════
+function atualizarVisibilidadeRecados() {
+  const habilitado = !!empresaAtual?.recados_habilitado;
+  const cardResp = document.getElementById('card-responsaveis');
+  if (cardResp) cardResp.style.display = habilitado ? '' : 'none';
+  const barra = document.getElementById('barra-recado');
+  if (barra) barra.style.display = habilitado ? '' : 'none';
+}
+
+function renderConfigResponsaveis() {
+  const el = document.getElementById('config-responsaveis-list');
+  if (!el) return;
+  if (!responsaveis.length) { el.innerHTML = '<div style="font-size:12px;color:var(--dim)">Nenhum responsável cadastrado.</div>'; return; }
+  el.innerHTML = responsaveis.map(r => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06)">
+      <div>
+        <div style="font-size:13px;font-weight:600">${esc(r.nome)}</div>
+        <div style="font-size:11px;color:var(--dim)">${esc(r.email)}</div>
+      </div>
+      <button class="icon-btn danger" onclick="removerResponsavel('${r.id}')" aria-label="Remover">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+      </button>
+    </div>`).join('');
+}
+
+async function adicionarResponsavel() {
+  const nome  = document.getElementById('resp-nome').value.trim();
+  const email = document.getElementById('resp-email').value.trim();
+  if (!nome || !email) return alert('Preencha nome e e-mail.');
+  const { error } = await sb.from('responsaveis').insert({ empresa_id: empresaAtual.id, nome, email });
+  if (error) return alert('Não foi possível adicionar: ' + error.message);
+  document.getElementById('resp-nome').value = '';
+  document.getElementById('resp-email').value = '';
+  await carregarResponsaveis();
+  renderConfigResponsaveis();
+  atualizarFiltrosResponsavel();
+}
+
+async function removerResponsavel(id) {
+  if (!confirm('Remover este responsável? Atividades já endereçadas a ele continuam registradas.')) return;
+  const { error } = await sb.from('responsaveis').update({ ativo:false }).eq('id', id);
+  if (error) return alert('Não foi possível remover: ' + error.message);
+  await carregarResponsaveis();
+  renderConfigResponsaveis();
+  atualizarFiltrosResponsavel();
+  renderAtividades();
+}
+
+// Popula os selects de filtro por responsável espalhados pela tela
+// (Atividades, Relatório, Resultados), mantendo o valor selecionado em
+// sincronia entre eles.
+function atualizarFiltrosResponsavel() {
+  const habilitado = !!empresaAtual?.recados_habilitado;
+  const opcoes = '<option value="">Todos os responsáveis</option>' + responsaveis.map(r=>`<option value="${r.id}">${esc(r.nome)}</option>`).join('');
+  ['filtro-atv-responsavel','tabela-filtro-responsavel','dash-filtro-responsavel'].forEach(id=>{
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.style.display = habilitado ? '' : 'none';
+    el.innerHTML = opcoes;
+    el.value = filtroResponsavelId;
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// RECADOS — mensagem livre que vira atividade ou move um negócio,
+// interpretada por regra (sem IA). Sempre passa por confirmação no V1.
+// ═══════════════════════════════════════════════════════
+const PALAVRAS_GANHO   = ['fechado','fechamos','fechei','ganhamos','ganho','ganhei','assinado','assinamos','assinei','vendido','vendemos','vendi'];
+const PALAVRAS_PERDIDO = ['perdemos','perdeu','perdi','perdido','cancelado','cancelou','cancelei','desistiu','desisti'];
+const DIAS_SEMANA = ['domingo','segunda','terca','quarta','quinta','sexta','sabado']; // índice = Date.getDay(), por isso sem acento (o texto já chega normalizado)
+
+function normalizarTexto(s) {
+  return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+}
+
+// Acha, dentro do texto, qual nome cadastrado (de uma lista) aparece —
+// em qualquer posição, não só no início. Retorna null (nenhum bateu) ou
+// undefined-like array pra chamar de "ambíguo" quando mais de um bate.
+function acharNaLista(textoNorm, itens, pegarTexto) {
+  const encontrados = itens.filter(item => {
+    const alvo = normalizarTexto(pegarTexto(item));
+    // Cada palavra do nome/contato precisa aparecer como palavra inteira
+    // no texto — evita "Ana" casar dentro de "banana".
+    return alvo.split(/\s+/).some(palavra => palavra.length >= 3 &&
+      new RegExp('\\b' + palavra.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + '\\b').test(textoNorm));
+  });
+  return encontrados;
+}
+
+function acharDataNoTexto(textoNorm) {
+  const h = new Date();
+  if (/\bhoje\b/.test(textoNorm)) return hoje();
+  if (/\bamanh[aã]\b/.test(textoNorm) || /\bamanha\b/.test(textoNorm)) {
+    const d = new Date(); d.setDate(d.getDate()+1); return d.toISOString().slice(0,10);
+  }
+  for (let i=0;i<DIAS_SEMANA.length;i++) {
+    if (new RegExp('\\b'+DIAS_SEMANA[i]+'\\b').test(textoNorm)) {
+      const alvo = i; // 0=domingo … 6=sábado, alinhado ao índice de DIAS_SEMANA
+      const d = new Date();
+      const diff = (alvo - d.getDay() + 7) % 7 || 7;
+      d.setDate(d.getDate()+diff);
+      return d.toISOString().slice(0,10);
+    }
+  }
+  return hoje();
+}
+
+// Interpreta a mensagem livre e devolve uma sugestão estruturada — nunca
+// grava nada sozinho. Tudo passa pela tela de confirmação depois.
+function interpretarRecado(texto) {
+  const textoNorm = normalizarTexto(texto);
+
+  const responsaveisAtivos = responsaveis;
+  const respsEncontrados = acharNaLista(textoNorm, responsaveisAtivos, r=>r.nome);
+
+  const temGanho   = PALAVRAS_GANHO.some(p=>new RegExp('\\b'+p+'\\b').test(textoNorm));
+  const temPerdido = PALAVRAS_PERDIDO.some(p=>new RegExp('\\b'+p+'\\b').test(textoNorm));
+  const acao = temPerdido ? 'perdido' : (temGanho ? 'ganho' : 'atividade');
+
+  const resultado = {
+    textoOriginal: texto,
+    acao, // 'atividade' | 'ganho' | 'perdido'
+    responsavelId: respsEncontrados.length===1 ? respsEncontrados[0].id : null,
+    responsavelAmbiguo: respsEncontrados.length>1,
+    negocioId: null,
+    negocioAmbiguo: false,
+    data: hoje(),
+  };
+
+  if (acao !== 'atividade') {
+    const abertosIds = (function(){ const {idsGanho,idsPerdido}=limitesEtapas(); return new Set([...idsGanho,...idsPerdido]); })();
+    const negociosAbertos = negocios.filter(n=>!abertosIds.has(n.etapa_id));
+    const negsEncontrados = acharNaLista(textoNorm, negociosAbertos, n=>[n.contato_nome,n.contato_empresa,n.titulo].filter(Boolean).join(' '));
+    resultado.negocioId = negsEncontrados.length===1 ? negsEncontrados[0].id : null;
+    resultado.negocioAmbiguo = negsEncontrados.length>1;
+  } else {
+    resultado.data = acharDataNoTexto(textoNorm);
+  }
+
+  return resultado;
+}
+
+function abrirConfirmacaoRecado() {
+  const elTexto = document.getElementById('recado-texto');
+  const texto = elTexto.value.trim();
+  if (!texto) return;
+  recadoInterpretado = interpretarRecado(texto);
+  renderConfirmacaoRecado();
+  document.getElementById('modal-confirma-recado').classList.add('open');
+}
+
+function renderConfirmacaoRecado() {
+  const r = recadoInterpretado;
+  if (!r) return;
+
+  const selResp = document.getElementById('rc-responsavel');
+  selResp.innerHTML = '<option value="">Selecionar…</option>' + responsaveis.map(x=>`<option value="${x.id}" ${x.id===r.responsavelId?'selected':''}>${esc(x.nome)}</option>`).join('');
+
+  const elAcao = document.getElementById('rc-acao');
+  elAcao.value = r.acao;
+
+  const abertosIds = (function(){ const {idsGanho,idsPerdido}=limitesEtapas(); return new Set([...idsGanho,...idsPerdido]); })();
+  const negociosAbertos = negocios.filter(n=>!abertosIds.has(n.etapa_id));
+  const selNeg = document.getElementById('rc-negocio');
+  selNeg.innerHTML = '<option value="">Selecionar…</option>' + negociosAbertos.map(n=>`<option value="${n.id}" ${n.id===r.negocioId?'selected':''}>${esc(n.titulo)}${n.contato_nome?' — '+esc(n.contato_nome):''}</option>`).join('');
+
+  document.getElementById('rc-titulo').value = r.textoOriginal;
+  document.getElementById('rc-data').value = r.data;
+
+  atualizarCamposConfirmacaoRecado();
+
+  const avisos = [];
+  if (r.responsavelAmbiguo) avisos.push('Mais de um responsável cadastrado bate com o texto — escolha manualmente.');
+  if (!r.responsavelId && !r.responsavelAmbiguo) avisos.push('Não encontrei nenhum responsável cadastrado no texto — escolha manualmente.');
+  if (r.acao !== 'atividade') {
+    if (r.negocioAmbiguo) avisos.push('Mais de um negócio aberto bate com o texto — escolha manualmente.');
+    if (!r.negocioId && !r.negocioAmbiguo) avisos.push('Não encontrei o negócio no texto — escolha manualmente.');
+  }
+  const elAviso = document.getElementById('rc-avisos');
+  elAviso.style.display = avisos.length ? '' : 'none';
+  elAviso.innerHTML = avisos.map(a=>`<div>⚠ ${esc(a)}</div>`).join('');
+}
+
+function atualizarCamposConfirmacaoRecado() {
+  const ehAtividade = document.getElementById('rc-acao').value === 'atividade';
+  document.getElementById('rc-wrap-atividade').style.display = ehAtividade ? '' : 'none';
+  document.getElementById('rc-wrap-negocio').style.display = ehAtividade ? 'none' : '';
+}
+
+async function confirmarRecado() {
+  const acao = document.getElementById('rc-acao').value;
+  const responsavelId = document.getElementById('rc-responsavel').value;
+  if (!responsavelId) { alert('Selecione o responsável.'); return; }
+
+  if (acao === 'atividade') {
+    const titulo = document.getElementById('rc-titulo').value.trim();
+    const data = document.getElementById('rc-data').value || hoje();
+    if (!titulo) { alert('Preencha o título da atividade.'); return; }
+    const { error } = await sb.from('atividades').insert({
+      empresa_id: empresaAtual.id, titulo, data, tipo:'recado', responsavel_id: responsavelId,
+    });
+    if (error) return alert('Não foi possível salvar: ' + error.message);
+  } else {
+    const negocioId = document.getElementById('rc-negocio').value;
+    if (!negocioId) { alert('Selecione o negócio.'); return; }
+    const neg = negocios.find(n=>n.id===negocioId);
+    const { idsGanho, idsPerdido } = limitesEtapas();
+    const etapaDestinoId = acao === 'ganho' ? idsGanho[0] : idsPerdido[0];
+    const update = { etapa_id: etapaDestinoId, ultima_atualizacao: new Date().toISOString() };
+    if (acao === 'ganho') { update.valor_fechado = neg?.valor || null; update.data_fechamento = hoje(); }
+    else { update.data_perda = hoje(); }
+    const { error } = await sb.from('negocios').update(update).eq('id', negocioId);
+    if (error) return alert('Não foi possível mover o negócio: ' + error.message);
+    // Registra a mensagem original como atividade concluída vinculada ao
+    // negócio, pra não perder o contexto de quem endereçou o quê.
+    await sb.from('atividades').insert({
+      empresa_id: empresaAtual.id, negocio_id: negocioId,
+      titulo: recadoInterpretado?.textoOriginal || 'Recado', data: hoje(),
+      tipo:'recado', concluida:true, responsavel_id: responsavelId,
+    });
+    await carregarNegocios();
+  }
+
+  document.getElementById('recado-texto').value = '';
+  recadoInterpretado = null;
+  fecharModal('confirma-recado');
+  await carregarAtividades();
+  atualizarTelasNegocios({atividades:true});
 }
 
 // ═══════════════════════════════════════════════════════
