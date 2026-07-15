@@ -625,6 +625,7 @@ tbody tr:hover td{background:rgba(123,47,255,.06);}
     </div>
     <div id="dash-periodo-label" style="font-size:11px;color:var(--cyan);font-weight:600"></div>
   </div>
+  <div id="dash-filtros-custom" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px"></div>
   <div class="dash-grid">
     <div class="dash-card">
       <div class="dash-card-title">Negócios por etapa</div>
@@ -1056,6 +1057,7 @@ let arrastando   = null;
 let sortCol      = null;
 let sortDir      = 1;
 let filtrosCustom = {};
+let filtrosDash = {};
 let buscaDebounceTimer = null;
 let dashDataIni  = null;
 let dashDataFim  = null;
@@ -1201,6 +1203,7 @@ async function selecionarCliente(empId, manual = true) {
     filtroPipeSemResponsavel = false;
     filtrosKanban = {};
     filtrosCustom = {};
+    filtrosDash = {};
     msfPainelAberto = null;
     const elBusca = document.getElementById('pipe-busca'); if (elBusca) elBusca.value = '';
     const elEstag = document.getElementById('pipe-filtro-estagnado'); if (elEstag) elEstag.value = '';
@@ -1370,6 +1373,7 @@ function atualizarKPIs() {
 // DASHBOARD
 // ═══════════════════════════════════════════════════════
 function renderDashboard() {
+  renderFiltrosDash();
   const lista      = negociosDash();
   const etapasOrd  = [...etapas].sort((a,b)=>a.ordem-b.ordem);
   const idsFinal   = etapasOrd.slice(-2).map(e=>e.id);
@@ -1645,7 +1649,7 @@ function renderFiltroMultiHtml(c, store, contexto, rerenderFn) {
   const panelId = `msf-panel-${contexto}-${c.id}`;
   const btnId   = `msf-btn-${contexto}-${c.id}`;
   const aberto  = msfPainelAberto === panelId;
-  const storeExpr = contexto==='kanban' ? 'filtrosKanban' : 'filtrosCustom';
+  const storeExpr = contexto==='kanban' ? 'filtrosKanban' : contexto==='dashboard' ? 'filtrosDash' : 'filtrosCustom';
   return `<div class="msf-wrap">
     <button type="button" id="${btnId}" class="msf-btn ${sel.length?'ativo':''}" onclick="event.stopPropagation();toggleMsfPanel('${panelId}')">
       ${esc(c.nome)}: ${label} ▾
@@ -3071,14 +3075,38 @@ function svgPizza(dados) {
     + '</div>';
 }
 
+function renderFiltrosDash() {
+  const wrap = document.getElementById('dash-filtros-custom');
+  if (!wrap) return;
+  const camposSel = camposCustom.filter(c=>c.tipo==='selecao'&&c.opcoes?.length);
+  if (!camposSel.length) { wrap.innerHTML=''; return; }
+  const temFiltro = Object.values(filtrosDash).some(v=>v && v.length);
+  wrap.innerHTML = camposSel.map(c=>renderFiltroMultiHtml(c, filtrosDash, 'dashboard', 'aplicarFiltroDash')).join('')
+    + (temFiltro ? `<button class="btn-sec" onclick="limparFiltrosDash()" style="color:var(--danger);border-color:rgba(255,107,107,.3)">✕ Limpar filtros</button>` : '');
+}
+
+function limparFiltrosDash() {
+  filtrosDash = {};
+  msfPainelAberto = null;
+  aplicarFiltroDash();
+}
+
 function negociosDash() {
-  if (!dashDataIni && !dashDataFim) return negocios;
-  return negocios.filter(n => {
-    if (!n.data_entrada) return true;
-    if (dashDataIni && n.data_entrada < dashDataIni) return false;
-    if (dashDataFim && n.data_entrada > dashDataFim) return false;
-    return true;
+  let lista = negocios;
+  if (dashDataIni || dashDataFim) {
+    lista = lista.filter(n => {
+      if (!n.data_entrada) return true;
+      if (dashDataIni && n.data_entrada < dashDataIni) return false;
+      if (dashDataFim && n.data_entrada > dashDataFim) return false;
+      return true;
+    });
+  }
+  // Filtros de campos personalizados — mesma lógica "bate com qualquer opção
+  // marcada" usada no Kanban e na Tabela/Relatório do Pipeline.
+  Object.entries(filtrosDash).forEach(([cid, vals]) => {
+    if (vals && vals.length) lista = lista.filter(n=>vals.includes((n.campos_valores||{})[cid]));
   });
+  return lista;
 }
 
 function aplicarFiltroDash() {
